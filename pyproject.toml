@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sunder"
+version = "0.2.0"
+description = "A terminal TUI for subdomain enumeration and host reconnaissance"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["osint", "recon", "subdomains", "tui", "security"]
+dependencies = [
+    "textual>=1.0",
+    "rich>=13",
+    "dnspython>=2.6",
+    "httpx[http2]>=0.27",
+    "cryptography>=42",
+]
+
+[project.scripts]
+sunder = "sunder.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint.per-file-ignores]
+# Network sources fail soft by design: every lookup is best-effort.
+"src/sunder/*" = ["BLE001", "S110", "S112"]
+# Dev scripts run against the source tree directly.
+"scripts/*" = ["E402", "I001", "RUF100"]
