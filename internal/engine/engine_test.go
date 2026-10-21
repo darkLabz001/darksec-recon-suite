@@ -500,6 +500,178 @@ func TestLooksLikeNetBIOS(t *testing.T) {
 	}
 }
 
+func TestLooksLikeNTP(t *testing.T) {
+	// A minimal NTP response: version 4, mode 4, a 48 byte body.
+	data := make([]byte, 48)
+	data[0] = 0x24
+	if !looksLikeNTP(data) {
+		t.Error("an NTP response was not recognised")
+	}
+	if looksLikeNTP(data[:10]) {
+		t.Error("a short datagram was recognised as NTP")
+	}
+	if looksLikeNTP([]byte{0x00, 0x00}) {
+		t.Error("an empty datagram was recognised as NTP")
+	}
+}
+
+func TestLooksLikeSNMP(t *testing.T) {
+	// A BER encoded sequence of four bytes.
+	if !looksLikeSNMP([]byte{0x30, 0x02, 0x02, 0x01}) {
+		t.Error("an SNMP message was not recognised")
+	}
+	if looksLikeSNMP([]byte{0x31, 0x02, 0x02, 0x01}) {
+		t.Error("a non SNMP message was recognised as SNMP")
+	}
+	if looksLikeSNMP([]byte{0x30}) {
+		t.Error("a truncated message was recognised as SNMP")
+	}
+}
+
+func TestDNSVersion(t *testing.T) {
+	// A CHAOS version.bind response with a single TXT answer.
+	data := []byte{
+		0x12, 0x34, 0x81, 0x80, // id, flags
+		0x00, 0x00, // questions
+		0x00, 0x01, // answers
+		0x00, 0x00, 0x00, 0x00, // authority and additional
+		0x07, 'v', 'e', 'r', 's', 'i', 'o', 'n', // name
+		0x04, 'b', 'i', 'n', 'd',
+		0x00, 0x10, // TXT
+		0x00, 0x03, // CHAOS
+		0x00, 0x00, 0x00, 0x30, // ttl
+		0x00, 0x08, // rdlength
+		0x05, 'B', 'i', 'n', 'd', // txt
+	}
+	product, version := dnsVersion(data)
+	if product != "" && version == "" {
+		t.Errorf("the version was not extracted: %q %q", product, version)
+	}
+	if _, v := dnsVersion([]byte{0x00}); v != "" {
+		t.Errorf("a truncated response produced a version: %q", v)
+	}
+}
+
+func TestSynStateTracksPendingProbes(t *testing.T) {
+	s := newSynState()
+	dst := netip.MustParseAddr("192.0.2.10")
+	src := netip.MustParseAddr("192.0.2.1")
+
+	if s.outstanding() != 0 {
+		t.Errorf("the state holds %d probes, want none", s.outstanding())
+	}
+
+	s.add(dst, 80, 40000, src, time.Now().Add(time.Second))
+	if s.outstanding() != 1 {
+		t.Errorf("the state holds %d probes, want 1", s.outstanding())
+	}
+
+	if !s.resolve(dst, 40000, StateOpen) {
+		t.Error("resolve did not find the pending probe")
+	}
+	if s.resolve(dst, 40000, StateOpen) {
+		t.Error("resolve found a probe that had already finished")
+	}
+	if s.outstanding() != 0 {
+		t.Errorf("the state holds %d probes, want none", s.outstanding())
+	}
+}
+
+func TestSynStateRemovesProbes(t *testing.T) {
+	s := newSynState()
+	dst := netip.MustParseAddr("192.0.2.10")
+	src := netip.MustParseAddr("192.0.2.1")
+
+	s.add(dst, 80, 40000, src, time.Now().Add(time.Second))
+	s.remove(dst, 40000)
+	if s.outstanding() != 0 {
+		t.Errorf("the state holds %d probes, want none", s.outstanding())
+	}
+}
+
+func TestSynStateExpiresProbes(t *testing.T) {
+	s := newSynState()
+	dst := netip.MustParseAddr("192.0.2.10")
+	src := netip.MustParseAddr("192.0.2.1")
+
+	s.add(dst, 80, 40000, src, time.Now().Add(-time.Second))
+
+	expired := s.expire(time.Now())
+	if len(expired) != 1 {
+		t.Fatalf("%d probes expired, want 1", len(expired))
+	}
+	if expired[0].State != StateFiltered {
+		t.Errorf("state = %q, want filtered", expired[0].State)
+	}
+	if expired[0].Port != 80 {
+		t.Errorf("port = %d, want 80", expired[0].Port)
+	}
+	if s.outstanding() != 0 {
+		t.Errorf("the state holds %d probes, want none", s.outstanding())
+	}
+}
+
+func TestSynStateRemembersLocalAddresses(t *testing.T) {
+	s := newSynState()
+	addr := netip.MustParseAddr("192.0.2.1")
+	if s.isLocal(addr) {
+		t.Error("an unknown address was reported as local")
+	}
+	s.addLocal(addr)
+	if !s.isLocal(addr) {
+		t.Error("a known address was not reported as local")
+	}
+}
+
+func TestSynStateAllocatesSourcePorts(t *testing.T) {
+	s := newSynState()
+	dst := netip.MustParseAddr("192.0.2.10")
+
+	first := s.allocatePort(dst)
+	if first < 32768 || first > 60999 {
+		t.Errorf("the source port %d is outside the ephemeral range", first)
+	}
+
+	second := s.allocatePort(dst)
+	if second == first {
+		t.Error("the source port was reused immediately")
+	}
+
+	// A different destination has its own port sequence.
+	other := s.allocatePort(netip.MustParseAddr("192.0.2.11"))
+	if other < 32768 || other > 60999 {
+		t.Errorf("the source port %d is outside the ephemeral range", other)
+	}
+}
+
+func TestControllerStats(t *testing.T) {
+	c := newController(4, 64)
+	for i := 0; i < 10; i++ {
+		c.observe(20*time.Millisecond, false)
+	}
+	limit, ewma, maxRTT := c.stats()
+	if limit < 4 {
+		t.Errorf("the limit is %d, want at least 4", limit)
+	}
+	if ewma <= 0 {
+		t.Errorf("the smoothed round trip time is %v", ewma)
+	}
+	if maxRTT < ewma {
+		t.Errorf("the maximum round trip time %v is below the average %v", maxRTT, ewma)
+	}
+}
+
+func TestScannerStats(t *testing.T) {
+	s := newScanner(Config{Timeout: time.Second})
+	limit, ewma := s.stats()
+	if limit <= 0 {
+		t.Errorf("the limit is %d, want a positive value", limit)
+	}
+	if ewma != 0 {
+		t.Errorf("the smoothed round trip time is %v, want zero", ewma)
+	}
+}
+
 // acceptLoop accepts connections until the listener is closed.
 func acceptLoop(ln net.Listener) {
 	for {

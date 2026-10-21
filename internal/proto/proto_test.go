@@ -545,6 +545,105 @@ func (stubConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
+// TestEveryProberSurvivesGarbage feeds every registered prober a stream of
+// bytes that means nothing to it.
+//
+// A prober that mis-parses a hostile or broken service must report an
+// error, never panic and never hang.
+func TestEveryProberSurvivesGarbage(t *testing.T) {
+	garbage := []byte{
+		0x00, 0xff, 0x13, 0x37, 0x00, 0x00, 0x00, 0x01,
+		0xde, 0xad, 0xbe, 0xef, 0x41, 0x42, 0x43, 0x44,
+		0x7f, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+
+	for _, name := range Names() {
+		name := name
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ln := listen(t)
+			defer ln.Close()
+
+			go serve(t, ln, func(c net.Conn) {
+				_, _ = c.Write(garbage)
+				// Closing makes most probers fail fast instead of
+				// waiting for their deadline.
+				c.Close()
+			})
+
+			p, ok := Lookup(name)
+			if !ok {
+				t.Fatalf("the %q prober disappeared", name)
+			}
+
+			ap := addrPort(t, ln)
+			conn, err := net.Dial("tcp", ap.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			obs, err := p.Probe(ctx, conn, ap, Options{Timeout: 500 * time.Millisecond})
+			if err == nil && obs == nil {
+				t.Error("Probe returned neither an observation nor an error")
+			}
+			if err != nil && obs != nil {
+				t.Error("Probe returned both an observation and an error")
+			}
+		})
+	}
+}
+
+// TestEveryProberSurvivesSilence points every prober at a service that
+// accepts the connection and then says nothing at all.
+func TestEveryProberSurvivesSilence(t *testing.T) {
+	for _, name := range Names() {
+		name := name
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ln := listen(t)
+			defer ln.Close()
+
+			go serve(t, ln, func(c net.Conn) {
+				time.Sleep(200 * time.Millisecond)
+			})
+
+			p, _ := Lookup(name)
+			ap := addrPort(t, ln)
+			conn, err := net.Dial("tcp", ap.String())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+
+			obs, err := p.Probe(ctx, conn, ap, Options{Timeout: 200 * time.Millisecond})
+			if err == nil && obs == nil {
+				t.Error("Probe returned neither an observation nor an error")
+			}
+		})
+	}
+}
+
+// TestEveryProberHasAConsistentName checks the registry contract.
+func TestEveryProberHasAConsistentName(t *testing.T) {
+	for _, name := range Names() {
+		p, _ := Lookup(name)
+		if p.Name() != name {
+			t.Errorf("the prober registered as %q calls itself %q", name, p.Name())
+		}
+		if p.Name() == "" {
+			t.Error("a prober has an empty name")
+		}
+	}
+}
+
 // listen starts a loopback listener for the tests.
 func listen(t *testing.T) net.Listener {
 	t.Helper()

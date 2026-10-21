@@ -305,6 +305,65 @@ func TestDetectHTTP(t *testing.T) {
 	}
 }
 
+func TestDetectCollectsTheFavicon(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+
+	icon := []byte{0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x10, 0x00, 0x00}
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+				_ = c.SetReadDeadline(time.Now().Add(2 * time.Second))
+				buf := make([]byte, 4096)
+				n, _ := c.Read(buf)
+				if strings.Contains(string(buf[:n]), "/favicon.ico") {
+					_, _ = c.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Length: " +
+						itoa(int64(len(icon))) + "\r\nConnection: close\r\n\r\n"))
+					_, _ = c.Write(icon)
+					return
+				}
+				body := "<html><head><title>Example</title></head></html>"
+				_, _ = c.Write([]byte("HTTP/1.1 200 OK\r\nServer: nginx/1.24.0\r\nContent-Length: " +
+					itoa(int64(len(body))) + "\r\nConnection: close\r\n\r\n" + body))
+			}(conn)
+		}
+	}()
+
+	addr := ln.Addr().(*net.TCPAddr)
+	ap := netip.AddrPortFrom(netip.MustParseAddr(addr.IP.String()), uint16(addr.Port))
+
+	conn, err := net.Dial("tcp", ap.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	d := New(Config{
+		Timeout:       2 * time.Second,
+		BannerTimeout: time.Second,
+		EnableHTTP:    true,
+		EnableFavicon: true,
+	})
+	info := d.Detect(context.Background(), ap, conn, nil)
+	if info == nil {
+		t.Fatal("Detect returned nothing")
+	}
+	if info.Favicon == "" {
+		t.Fatal("the favicon fingerprint was not collected")
+	}
+	if want := FaviconHash(icon); info.Favicon != want {
+		t.Errorf("favicon = %q, want %q", info.Favicon, want)
+	}
+}
+
 func TestDetectBannerFallback(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

@@ -306,7 +306,8 @@ make all        # lint, test and build
 ```
 
 The test suite is hermetic: it starts loopback listeners instead of
-touching the network, so it runs anywhere.
+touching the network, so it runs anywhere. Statement coverage sits at 76 %,
+with the core packages (CLI, output, ports, rate limiting) above 90 %.
 
 ---
 

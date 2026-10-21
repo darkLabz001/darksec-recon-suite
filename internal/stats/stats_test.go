@@ -162,3 +162,57 @@ func TestStartStopsWhenTheScanFinishes(t *testing.T) {
 		t.Errorf("the reporter drew %q for a non terminal writer", buf.String())
 	}
 }
+
+func TestDrawRendersTheProgressLine(t *testing.T) {
+	var buf bytes.Buffer
+	r := New(&buf, false)
+	r.enabled = true // pretend the writer is a terminal
+	r.SetTotal(100)
+	for i := 0; i < 25; i++ {
+		r.Add("open")
+	}
+
+	r.draw(false)
+	out := buf.String()
+	if !strings.Contains(out, "25/100") {
+		t.Errorf("the progress line %q does not show the counters", out)
+	}
+	if !strings.Contains(out, "open=25") {
+		t.Errorf("the progress line %q does not show the open count", out)
+	}
+	if !strings.Contains(out, "/s") {
+		t.Errorf("the progress line %q does not show the rate", out)
+	}
+}
+
+func TestDrawFinalLineEndsWithANewline(t *testing.T) {
+	var buf bytes.Buffer
+	r := New(&buf, false)
+	r.enabled = true
+	r.SetTotal(10)
+	r.Add("open")
+
+	r.draw(true)
+	if !strings.HasSuffix(buf.String(), "\n") {
+		t.Errorf("the final line %q does not end with a newline", buf.String())
+	}
+}
+
+func TestDrawIsThrottled(t *testing.T) {
+	var buf bytes.Buffer
+	r := New(&buf, false)
+	r.enabled = true
+	r.SetTotal(10)
+
+	r.draw(false)
+	first := buf.Len()
+	if first == 0 {
+		t.Fatal("the first draw produced nothing")
+	}
+
+	// A second draw straight away is suppressed.
+	r.draw(false)
+	if buf.Len() != first {
+		t.Errorf("the reporter drew twice within the throttle window")
+	}
+}
