@@ -561,19 +561,42 @@ func TestSynStateTracksPendingProbes(t *testing.T) {
 		t.Errorf("the state holds %d probes, want none", s.outstanding())
 	}
 
-	s.add(dst, 80, 40000, src, time.Now().Add(time.Second))
+	s.add(dst, 80, 40000, src, 1234, time.Now().Add(time.Second))
 	if s.outstanding() != 1 {
 		t.Errorf("the state holds %d probes, want 1", s.outstanding())
 	}
 
-	if !s.resolve(dst, 40000, StateOpen) {
-		t.Error("resolve did not find the pending probe")
+	key := synKey{dst: dst, dstPort: 80, srcPort: 40000}
+	entry, ok := s.resolve(key)
+	if !ok {
+		t.Fatal("resolve did not find the pending probe")
 	}
-	if s.resolve(dst, 40000, StateOpen) {
+	if entry.seq != 1234 {
+		t.Errorf("the sequence number is %d, want 1234", entry.seq)
+	}
+	if _, ok := s.resolve(key); ok {
 		t.Error("resolve found a probe that had already finished")
 	}
 	if s.outstanding() != 0 {
 		t.Errorf("the state holds %d probes, want none", s.outstanding())
+	}
+}
+
+func TestSynStateIgnoresForeignReplies(t *testing.T) {
+	s := newSynState()
+	dst := netip.MustParseAddr("192.0.2.10")
+	src := netip.MustParseAddr("192.0.2.1")
+
+	s.add(dst, 80, 40000, src, 1234, time.Now().Add(time.Second))
+
+	// A reply that carries the wrong port pair does not belong to the
+	// probe and must not resolve it.
+	wrong := synKey{dst: dst, dstPort: 81, srcPort: 40000}
+	if _, ok := s.resolve(wrong); ok {
+		t.Error("a reply for another port resolved the probe")
+	}
+	if s.outstanding() != 1 {
+		t.Errorf("the state holds %d probes, want 1", s.outstanding())
 	}
 }
 
@@ -582,8 +605,8 @@ func TestSynStateRemovesProbes(t *testing.T) {
 	dst := netip.MustParseAddr("192.0.2.10")
 	src := netip.MustParseAddr("192.0.2.1")
 
-	s.add(dst, 80, 40000, src, time.Now().Add(time.Second))
-	s.remove(dst, 40000)
+	s.add(dst, 80, 40000, src, 1, time.Now().Add(time.Second))
+	s.remove(dst, 80, 40000)
 	if s.outstanding() != 0 {
 		t.Errorf("the state holds %d probes, want none", s.outstanding())
 	}
@@ -594,7 +617,7 @@ func TestSynStateExpiresProbes(t *testing.T) {
 	dst := netip.MustParseAddr("192.0.2.10")
 	src := netip.MustParseAddr("192.0.2.1")
 
-	s.add(dst, 80, 40000, src, time.Now().Add(-time.Second))
+	s.add(dst, 80, 40000, src, 1, time.Now().Add(-time.Second))
 
 	expired := s.expire(time.Now())
 	if len(expired) != 1 {
@@ -608,6 +631,22 @@ func TestSynStateExpiresProbes(t *testing.T) {
 	}
 	if s.outstanding() != 0 {
 		t.Errorf("the state holds %d probes, want none", s.outstanding())
+	}
+}
+
+func TestSynStateRemembersHosts(t *testing.T) {
+	s := newSynState()
+	addr := netip.MustParseAddr("192.0.2.10")
+	host := target.Host{V4: addr, V6: netip.MustParseAddr("2001:db8::10")}
+
+	s.addHost(addr, host)
+	if got := s.host(addr); got.V6 != host.V6 {
+		t.Errorf("the host is %s, want %s", got.V6, host.V6)
+	}
+
+	unknown := netip.MustParseAddr("192.0.2.99")
+	if got := s.host(unknown); got.V4 != unknown {
+		t.Errorf("the host address is %s, want %s", got.V4, unknown)
 	}
 }
 

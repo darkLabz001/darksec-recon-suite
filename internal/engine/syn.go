@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -71,6 +72,12 @@ func NewSYNScanner(cfg Config) (*SYNScanner, error) {
 
 // Scan probes every port of every host with a SYN packet.
 func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []uint16, out chan<- Result) error {
+	// The scanner owns a cancellable context of its own. The receive loop
+	// watches it, so cancelling it is what stops the reader once the
+	// scan is over.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	tx, err := openRawTCP()
 	if err != nil {
 		return fmt.Errorf("the syn engine needs raw socket access: %w (run as root or grant CAP_NET_RAW)", err)
@@ -99,6 +106,7 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 			if !addr.Is4() {
 				continue
 			}
+			state.addHost(addr, h)
 			if _, ok := sources[addr]; ok {
 				continue
 			}
@@ -111,9 +119,6 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 		}
 	}
 
-	sendCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	for _, h := range hosts {
 		for _, port := range portList {
 			for _, addr := range h.Addrs() {
@@ -125,30 +130,31 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 					continue
 				}
 				if s.limiter != nil {
-					if err := s.limiter.Wait(sendCtx); err != nil {
+					if err := s.limiter.Wait(ctx); err != nil {
 						break
 					}
 				}
 
 				srcPort := state.allocatePort(addr)
+				seq := rand.Uint32()
 				deadline := time.Now().Add(s.cfg.Timeout)
 				// The probe is registered before it is sent, so that a
 				// reply that races the transmission is not lost.
-				state.add(addr, port, srcPort, local, deadline)
+				state.add(addr, port, srcPort, local, seq, deadline)
 
 				packet := buildSYN(synSpec{
 					Src:     local,
 					Dst:     addr,
 					SrcPort: srcPort,
 					DstPort: port,
-					Seq:     rand.Uint32(),
+					Seq:     seq,
 					Window:  65535,
 					TTL:     64,
 					ID:      uint16(srcPort),
 					Flags:   tcpFlagSYN,
 				})
 				if err := sendRaw(tx, packet, addr); err != nil {
-					state.remove(addr, srcPort)
+					state.remove(addr, port, srcPort)
 					continue
 				}
 			}
@@ -191,9 +197,15 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 func (s *SYNScanner) receiveLoop(ctx context.Context, fd int, state *synState, out chan<- Result) {
 	buf := make([]byte, 65536)
 	for {
+		// The read is bounded by a socket timeout, so a cancelled scan is
+		// noticed within a fraction of a second.
+		if ctx.Err() != nil {
+			return
+		}
+
 		n, _, err := syscall.Recvfrom(fd, buf, 0)
 		if err != nil {
-			if errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.EAGAIN) {
+			if errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK) {
 				continue
 			}
 			return
@@ -206,35 +218,46 @@ func (s *SYNScanner) receiveLoop(ctx context.Context, fd int, state *synState, o
 			continue
 		}
 		// Ignore frames that are not addressed to us, which filters out
-		// the copies of our own transmissions.
+		// the traffic of unrelated processes.
 		if !state.isLocal(seg.dstIP) {
 			continue
 		}
 
+		// A reply carries the ports of the probe in reverse order: the
+		// port we asked for becomes the source port and the port we
+		// chose becomes the destination port.
+		key := synKey{dst: seg.srcIP, dstPort: seg.srcPort, srcPort: seg.dstPort}
+
 		switch {
 		case seg.flags&tcpFlagRST != 0:
-			// A reset means the port is closed.
-			if state.resolve(seg.srcIP, seg.dstPort, StateClosed) {
+			// A reset means the port is closed. The scanner also sees
+			// its own transmissions, but those never carry a reset.
+			if entry, ok := state.resolve(key); ok {
 				s.emit(ctx, out, Result{
-					Host:  target.Host{V4: seg.srcIP},
+					Host:  state.host(seg.srcIP),
 					Addr:  seg.srcIP,
-					Port:  seg.dstPort,
+					Port:  key.dstPort,
 					Proto: "tcp",
 					State: StateClosed,
+					RTT:   time.Since(entry.sent),
 				})
 			}
 		case seg.flags&tcpFlagSYN != 0 && seg.flags&tcpFlagACK != 0:
-			// A syn-ack means the port is open.
-			if state.resolve(seg.srcIP, seg.dstPort, StateOpen) {
+			// A syn-ack means the port is open. The acknowledgement
+			// number must match the sequence number of the probe,
+			// which is what tells a reply apart from the copy of our
+			// own request that the kernel hands back to us.
+			if entry, ok := state.resolve(key); ok && seg.ack == entry.seq+1 {
 				res := Result{
-					Host:  target.Host{V4: seg.srcIP},
+					Host:  state.host(seg.srcIP),
 					Addr:  seg.srcIP,
-					Port:  seg.dstPort,
+					Port:  key.dstPort,
 					Proto: "tcp",
 					State: StateOpen,
+					RTT:   time.Since(entry.sent),
 				}
 				if s.det != nil {
-					res.Service = s.detectOpen(ctx, seg.srcIP, seg.dstPort)
+					res.Service = s.detectOpen(ctx, seg.srcIP, key.dstPort)
 				}
 				s.emit(ctx, out, res)
 			}
@@ -275,19 +298,24 @@ type synState struct {
 	pending map[synKey]*synEntry
 	ports   map[netip.Addr]uint16
 	locals  map[netip.Addr]struct{}
+	hosts   map[netip.Addr]target.Host
 }
 
-// synKey identifies a probe. The source port is the one the scanner chose,
-// which the target echoes back as the destination port of its reply.
+// synKey identifies a probe. A reply carries the ports of the probe in
+// reverse order, so the destination address, the port that was probed and
+// the port that was chosen by the scanner are all needed to tell which
+// probe a reply belongs to.
 type synKey struct {
 	dst     netip.Addr
+	dstPort uint16
 	srcPort uint16
 }
 
 type synEntry struct {
-	port     uint16
 	src      netip.Addr
+	sent     time.Time
 	deadline time.Time
+	seq      uint32
 }
 
 func newSynState() *synState {
@@ -295,7 +323,26 @@ func newSynState() *synState {
 		pending: make(map[synKey]*synEntry),
 		ports:   make(map[netip.Addr]uint16),
 		locals:  make(map[netip.Addr]struct{}),
+		hosts:   make(map[netip.Addr]target.Host),
 	}
+}
+
+// addHost records the logical host an address belongs to, so that results
+// keep the name the user asked for.
+func (s *synState) addHost(addr netip.Addr, host target.Host) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.hosts[addr] = host
+}
+
+// host returns the logical host an address belongs to.
+func (s *synState) host(addr netip.Addr) target.Host {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if host, ok := s.hosts[addr]; ok {
+		return host
+	}
+	return target.Host{V4: addr}
 }
 
 // addLocal records a local address used to send probes.
@@ -330,31 +377,31 @@ func (s *synState) allocatePort(dst netip.Addr) uint16 {
 }
 
 // add registers a probe that is waiting for a reply.
-func (s *synState) add(dst netip.Addr, port, srcPort uint16, src netip.Addr, deadline time.Time) {
+func (s *synState) add(dst netip.Addr, dstPort, srcPort uint16, src netip.Addr, seq uint32, deadline time.Time) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.pending[synKey{dst: dst, srcPort: srcPort}] = &synEntry{port: port, src: src, deadline: deadline}
+	key := synKey{dst: dst, dstPort: dstPort, srcPort: srcPort}
+	s.pending[key] = &synEntry{src: src, sent: time.Now(), deadline: deadline, seq: seq}
 }
 
 // remove drops a probe that could not be sent.
-func (s *synState) remove(dst netip.Addr, srcPort uint16) {
+func (s *synState) remove(dst netip.Addr, dstPort, srcPort uint16) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.pending, synKey{dst: dst, srcPort: srcPort})
+	delete(s.pending, synKey{dst: dst, dstPort: dstPort, srcPort: srcPort})
 }
 
-// resolve marks a pending probe as finished and reports whether it was
-// known. The port argument is the destination port of the reply, which is
-// the source port we chose for the probe.
-func (s *synState) resolve(dst netip.Addr, srcPort uint16, state State) bool {
+// resolve marks a pending probe as finished and returns it. The entry is
+// only returned when the probe is known, so that stray packets are ignored.
+func (s *synState) resolve(key synKey) (*synEntry, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	key := synKey{dst: dst, srcPort: srcPort}
-	if _, ok := s.pending[key]; !ok {
-		return false
+	entry, ok := s.pending[key]
+	if !ok {
+		return nil, false
 	}
 	delete(s.pending, key)
-	return true
+	return entry, true
 }
 
 // expire removes probes whose deadline has passed and reports them.
@@ -366,11 +413,12 @@ func (s *synState) expire(now time.Time) []Result {
 		if now.After(entry.deadline) {
 			delete(s.pending, key)
 			out = append(out, Result{
-				Host:  target.Host{V4: key.dst},
+				Host:  s.hosts[key.dst],
 				Addr:  key.dst,
-				Port:  entry.port,
+				Port:  key.dstPort,
 				Proto: "tcp",
 				State: StateFiltered,
+				RTT:   now.Sub(entry.sent),
 			})
 		}
 	}
@@ -401,16 +449,26 @@ func openRawTCP() (int, error) {
 }
 
 // openPacketSocket opens an AF_PACKET socket that receives every frame.
+//
+// The socket carries a receive timeout so that the read loop can notice a
+// cancelled scan; without it the loop would block in the kernel forever.
+//
+// Outgoing packets are not filtered by the kernel, because the reply to a
+// probe of a local address is generated locally and would be dropped by
+// the kernel's own filter. The read loop recognises the copies of the
+// scanner's own requests by their sequence numbers instead.
 func openPacketSocket(iface string) (int, error) {
 	fd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, int(htons(syscall.ETH_P_ALL)))
 	if err != nil {
 		return -1, err
 	}
-	// Ignore the packets we send ourselves, which removes the need to
-	// filter them out in userspace.
-	const packetIgnoreOutgoing = 23
-	const solPacket = 263
-	_ = syscall.SetsockoptInt(fd, solPacket, packetIgnoreOutgoing, 1)
+
+	// Bound the time a single read may block for.
+	timeout := syscall.Timeval{Sec: 0, Usec: 200 * 1000}
+	if err := syscall.SetsockoptTimeval(fd, syscall.SOL_SOCKET, syscall.SO_RCVTIMEO, &timeout); err != nil {
+		syscall.Close(fd)
+		return -1, err
+	}
 
 	if iface != "" {
 		ifi, err := net.InterfaceByName(iface)
@@ -486,6 +544,8 @@ func parseTCPFrame(frame []byte) (tcpSegment, bool) {
 	seg.dstIP = dst
 	seg.srcPort = uint16(tcp[0])<<8 | uint16(tcp[1])
 	seg.dstPort = uint16(tcp[2])<<8 | uint16(tcp[3])
+	seg.seq = binary.BigEndian.Uint32(tcp[4:8])
+	seg.ack = binary.BigEndian.Uint32(tcp[8:12])
 	seg.flags = tcp[13]
 	return seg, true
 }
@@ -496,6 +556,8 @@ type tcpSegment struct {
 	dstIP   netip.Addr
 	srcPort uint16
 	dstPort uint16
+	seq     uint32
+	ack     uint32
 	flags   uint8
 }
 
