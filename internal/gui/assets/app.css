@@ -165,3 +165,16 @@ tr.detail-row td { padding: 0 12px 12px; white-space: normal; background: var(--
 
 .empty { padding: 40px; text-align: center; color: var(--muted); }
 .hidden { display: none; }
+
+/* OS detection */
+.os-results { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.os-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 8px; padding: 6px 12px; font-family: var(--mono); font-size: 12px;
+}
+.os-chip .os-ip { color: var(--muted); }
+.os-chip .os-name { color: var(--accent); font-weight: 600; }
+.os-chip .os-acc { color: var(--muted); font-size: 11px; }
+.os-chip .os-desc { color: var(--muted); font-size: 11px; }

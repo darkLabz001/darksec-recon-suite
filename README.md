@@ -26,6 +26,7 @@ $ vantage -s --ja3 -p 443,8443 example.com
 | **Rate limiting** | A token bucket with a configurable burst keeps a scan inside a fixed probes-per-second budget. |
 | **Dual stack** | IPv4 and IPv6 targets are probed as one logical host, raced using the RFC 8305 Happy Eyeballs delay. |
 | **Service detection** | 48 protocol probers exchange real protocol handshakes, and 65 fingerprint rules turn banners into product, version and CPE. |
+| **OS detection** | A raw SYN probe fingerprints the remote TCP/IP stack — initial TTL, TCP window, MSS and the ordered TCP options — and matches it against a database to guess the operating system. |
 | **TLS fingerprints** | JA3 and JA3S are computed from the real ClientHello and ServerHello, along with certificate metadata. |
 | **Favicon hashing** | Shodan-style MurmurHash3 favicon fingerprints identify web software. |
 | **Bounded memory** | The pipeline is streaming: a full 65 535 port scan peaks at ~46 MiB of resident memory. |
@@ -72,6 +73,9 @@ vantage --engine udp --top-ports 44 192.168.1.1
 
 # Machine readable output.
 vantage --format jsonl -o scan.jsonl 10.0.0.0/24
+
+# Detect the operating system of each host (needs CAP_NET_RAW).
+sudo vantage --os -p 22,443 10.0.0.5
 ```
 
 ---
@@ -214,6 +218,36 @@ window, subject alternative names, key type and signature algorithm.
 MurmurHash3 fingerprint of the icon, which identifies web software even when
 the banner is hidden.
 
+### Operating system detection
+
+`--os` fingerprints the remote operating system by looking at how its TCP/IP
+stack answers a crafted SYN. The reply carries several signals that are
+distinctive per OS:
+
+* the **initial TTL** (Linux and macOS use 64, Windows 128, Cisco and
+  Solaris 255);
+* the **TCP window size**;
+* the **MSS** and the ordered list of **TCP options** (window scale, SACK,
+  timestamps).
+
+The observed signature is matched against a built-in database and the best
+guess is reported with a confidence percentage and the raw values, so the
+guess can be verified by eye:
+
+```sh
+sudo vantage --os -p 22,443 10.0.0.5
+```
+
+```
+10.0.0.5:22                open       ssh
+OS: 10.0.0.5 Linux (95% confidence) - Linux 5.x/6.x (Ubuntu, Debian, Arch, Fedora)
+```
+
+OS detection needs `CAP_NET_RAW` (it crafts and reads raw packets), and runs
+once per host on the first open TCP port. The database is a curated starting
+point of well known signatures; the JSON output always includes the full
+fingerprint so the guess is not a black box.
+
 ---
 
 ## Output formats
@@ -316,6 +350,7 @@ gui (web dashboard) ── engine ── output
 * `internal/engine` holds the shared pipeline and the three engines.
 * `internal/proto` holds the protocol probers and the TLS machinery.
 * `internal/detect` holds the fingerprint rules and the favicon hashing.
+* `internal/osdetect` holds the operating system fingerprinting.
 * `internal/output` renders results.
 * `internal/ratelimit` implements the token bucket.
 * `internal/gui` serves the embedded dashboard and drives the engines over HTTP.

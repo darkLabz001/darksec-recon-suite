@@ -9,6 +9,7 @@ const state = {
   filter: "",
   stateFilter: new Set(["open"]),
   results: [], // resultJSON objects
+  osResults: {}, // ip -> os result
   events: null,
 };
 
@@ -137,11 +138,32 @@ function setElapsed(seconds) {
 }
 
 function addResult(r) {
+  if (r.os) {
+    state.osResults[r.ip] = r.os;
+    renderOS();
+    return;
+  }
   state.results.push(r);
   const counts = state.counts;
   if (r.state === "open") counts.open++;
   else if (r.state === "closed") counts.closed++;
   else if (r.state === "filtered") counts.filtered++;
+}
+
+function renderOS() {
+  const box = $("#os-results");
+  const entries = Object.entries(state.osResults);
+  box.classList.toggle("hidden", entries.length === 0);
+  box.textContent = "";
+  for (const [ip, os] of entries) {
+    const chip = document.createElement("div");
+    chip.className = "os-chip";
+    chip.appendChild(el("span", "os-ip", ip));
+    chip.appendChild(el("span", "os-name", os.os || "unknown"));
+    if (os.accuracy != null) chip.appendChild(el("span", "os-acc", os.accuracy + "%"));
+    if (os.description) chip.appendChild(el("span", "os-desc", os.description));
+    box.appendChild(chip);
+  }
 }
 
 function applyStats(s) {
@@ -163,7 +185,9 @@ function connectEvents() {
     state.running = true;
     state.counts = { open: 0, closed: 0, filtered: 0 };
     state.results = [];
+    state.osResults = {};
     renderResults();
+    renderOS();
     renderStats();
   });
 
@@ -202,9 +226,15 @@ async function fetchState() {
   try {
     const res = await fetch("/api/state");
     const data = await res.json();
-    state.results = data.results || [];
+    state.results = [];
+    state.osResults = {};
     state.counts = { open: 0, closed: 0, filtered: 0 };
-    for (const r of state.results) {
+    for (const r of data.results || []) {
+      if (r.os) {
+        state.osResults[r.ip] = r.os;
+        continue;
+      }
+      state.results.push(r);
       if (r.state === "open") state.counts.open++;
       else if (r.state === "closed") state.counts.closed++;
       else state.counts.filtered++;
@@ -212,6 +242,7 @@ async function fetchState() {
     applyStats(data.stats);
     state.running = !!(data.stats && data.stats.running);
     renderResults();
+    renderOS();
     renderStats();
   } catch (_) {
     /* ignore */
@@ -248,6 +279,7 @@ async function startScan() {
     top_ports: topPorts,
     engine: $("#engine").value,
     detect: $("#detect").checked,
+    os_detect: $("#os-detect").checked,
     ja3: $("#ja3").checked,
     favicon: $("#favicon").checked,
     show_all: $("#showall").checked,
@@ -271,8 +303,10 @@ async function startScan() {
     state.running = true;
     state.results = [];
     state.counts = { open: 0, closed: 0, filtered: 0 };
+    state.osResults = {};
     applyStats(data.stats);
     renderResults();
+    renderOS();
     renderStats();
   } catch (err) {
     $("#form-error").textContent = String(err);

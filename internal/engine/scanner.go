@@ -44,6 +44,10 @@ type Config struct {
 	Detect bool
 	// DetectTimeout bounds a single protocol exchange.
 	DetectTimeout time.Duration
+	// OSDetect enables operating system fingerprinting via a raw SYN probe.
+	OSDetect bool
+	// OSDetectTimeout bounds the wait for the SYN-ACK reply.
+	OSDetectTimeout time.Duration
 	// UserAgent is sent with HTTP requests.
 	UserAgent string
 	// EnableJA3 turns on TLS handshake fingerprinting.
@@ -71,11 +75,12 @@ type Config struct {
 
 // Defaults for the scan configuration.
 const (
-	DefaultTimeout        = time.Second
-	DefaultDetectTimeout  = 5 * time.Second
-	DefaultMinConcurrency = 64
-	DefaultMaxConcurrency = 4000
-	DefaultHappyDelay     = 250 * time.Millisecond
+	DefaultTimeout         = time.Second
+	DefaultDetectTimeout   = 5 * time.Second
+	DefaultOSDetectTimeout = 3 * time.Second
+	DefaultMinConcurrency  = 64
+	DefaultMaxConcurrency  = 4000
+	DefaultHappyDelay      = 250 * time.Millisecond
 )
 
 // probeJob is a single unit of work.
@@ -92,6 +97,7 @@ type scanner struct {
 	limiter *ratelimit.Limiter
 	det     *detect.Detector
 	dialer  net.Dialer
+	os      *osDetector
 }
 
 // newScanner prepares the shared scanner machinery.
@@ -114,6 +120,9 @@ func newScanner(cfg Config) *scanner {
 	if cfg.DetectTimeout <= 0 {
 		cfg.DetectTimeout = DefaultDetectTimeout
 	}
+	if cfg.OSDetectTimeout <= 0 {
+		cfg.OSDetectTimeout = DefaultOSDetectTimeout
+	}
 
 	limit := cfg.MinConcurrency
 	if cfg.Concurrency > 0 {
@@ -128,6 +137,7 @@ func newScanner(cfg Config) *scanner {
 		cfg:  cfg,
 		gate: newGate(limit),
 		ctrl: newController(cfg.MinConcurrency, cfg.MaxConcurrency),
+		os:   newOSDetector(cfg),
 	}
 	if cfg.Rate > 0 {
 		s.limiter = ratelimit.New(cfg.Rate)
@@ -215,6 +225,7 @@ func (s *scanner) run(ctx context.Context, hosts []target.Host, portList []uint1
 	}()
 
 	wg.Wait()
+	s.os.wait()
 	cancel()
 	<-adjustDone
 	return nil
@@ -276,6 +287,7 @@ func (s *scanner) worker(ctx context.Context, jobs <-chan probeJob, pr ports.Pro
 		s.gate.release()
 
 		res.Proto = pr
+		s.os.maybeTrigger(ctx, res, out)
 		select {
 		case out <- res:
 		case <-ctx.Done():

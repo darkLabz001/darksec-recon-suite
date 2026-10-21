@@ -25,6 +25,7 @@ github.com/darkLabz001/darksec-recon-suite/vantage
     │   └── result.go       the Result type
     ├── proto               protocol probers and TLS machinery
     ├── detect              fingerprint rules, service detection, favicon hashing
+    ├── osdetect            operating system fingerprinting
     ├── output              result rendering
     ├── ratelimit           the token bucket
     ├── stats               live progress reporting
@@ -263,6 +264,27 @@ cipher suite, the ALPN protocols and the full certificate metadata.
 `--favicon` requests `/favicon.ico` from an HTTP service, base64 encodes
 the body, hashes it with MurmurHash3 and renders the result as a base64
 encoded signed decimal — the exact format Shodan publishes.
+
+### 4.7 Operating system detection
+
+`internal/osdetect` guesses the operating system from its TCP/IP stack. When
+`--os` is given and an open TCP port is found, the scanner sends one crafted
+SYN per host and dissects the SYN-ACK:
+
+* the **initial TTL**, rounded up to 64, 128 or 255 to cancel out the hop
+  count;
+* the **TCP window size**;
+* the **MSS** (a weak signal, since it follows the link MTU);
+* the ordered **TCP options** — window scale, SACK and timestamps.
+
+The signature is scored against a built-in database and the best match is
+reported with a confidence percentage, the raw fingerprint and the runner-up
+candidates. The probe reuses the same raw-socket machinery as the SYN engine,
+so it requires `CAP_NET_RAW`.
+
+The detector runs once per host through a shared `osDetector` helper, which
+deduplicates by address and is awaited before the engine returns so no result
+is lost when the caller closes the result channel.
 
 ---
 

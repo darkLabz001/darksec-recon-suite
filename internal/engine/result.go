@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/detect"
+	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/osdetect"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/ports"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/target"
 )
@@ -43,6 +44,10 @@ type Result struct {
 	RTT time.Duration
 	// Service holds detection results for open ports.
 	Service *detect.ServiceInfo
+	// OS holds the operating system fingerprint of the host, when OS
+	// detection is enabled. It is reported on a dedicated result once per
+	// host, with a zero port.
+	OS *osdetect.Result
 	// Err is the underlying error, if any.
 	Err error
 }

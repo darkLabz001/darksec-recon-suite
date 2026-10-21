@@ -27,6 +27,7 @@ type SYNScanner struct {
 	limiter *ratelimit.Limiter
 	ctrl    *controller
 	det     *detect.Detector
+	os      *osDetector
 }
 
 // NewSYNScanner returns a scanner using the raw SYN engine.
@@ -46,10 +47,14 @@ func NewSYNScanner(cfg Config) (*SYNScanner, error) {
 	if cfg.DetectTimeout <= 0 {
 		cfg.DetectTimeout = DefaultDetectTimeout
 	}
+	if cfg.OSDetectTimeout <= 0 {
+		cfg.OSDetectTimeout = DefaultOSDetectTimeout
+	}
 
 	s := &SYNScanner{
 		cfg:  cfg,
 		ctrl: newController(cfg.MinConcurrency, cfg.MaxConcurrency),
+		os:   newOSDetector(cfg),
 	}
 	if cfg.Rate > 0 {
 		s.limiter = ratelimit.New(cfg.Rate)
@@ -173,6 +178,7 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 		select {
 		case <-ctx.Done():
 			cancel()
+			s.os.wait()
 			<-recvDone
 			return ctx.Err()
 		case <-ticker.C:
@@ -181,6 +187,7 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 				case out <- res:
 				case <-ctx.Done():
 					cancel()
+					s.os.wait()
 					<-recvDone
 					return ctx.Err()
 				}
@@ -188,6 +195,7 @@ func (s *SYNScanner) Scan(ctx context.Context, hosts []target.Host, portList []u
 		}
 	}
 
+	s.os.wait()
 	cancel()
 	<-recvDone
 	return nil
@@ -260,6 +268,7 @@ func (s *SYNScanner) receiveLoop(ctx context.Context, fd int, state *synState, o
 					res.Service = s.detectOpen(ctx, seg.srcIP, key.dstPort)
 				}
 				s.emit(ctx, out, res)
+				s.os.maybeTrigger(ctx, res, out)
 			}
 		}
 	}

@@ -71,6 +71,8 @@ Flags:
 		{"    --user-agent", "user agent sent with HTTP requests"},
 		{"    --host-header", "host header sent with HTTP requests"},
 		{"    --fingerprint-rules", "JSON file with extra fingerprint rules"},
+		{"    --os", "detect the operating system of each host (needs CAP_NET_RAW)"},
+		{"    --os-timeout", "timeout for the os detection probe"},
 		{"", ""},
 		{"-o, --output", "write results to a file"},
 		{"    --format", "output format: text, json, jsonl, csv, greppable or template"},

@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/engine"
+	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/osdetect"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/output"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/ports"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/target"
@@ -50,6 +51,7 @@ type scanRequest struct {
 	TopPorts    int     `json:"top_ports"`
 	Engine      string  `json:"engine"`
 	Detect      bool    `json:"detect"`
+	OSDetect    bool    `json:"os_detect"`
 	JA3         bool    `json:"ja3"`
 	Favicon     bool    `json:"favicon"`
 	TimeoutMs   int     `json:"timeout_ms"`
@@ -61,23 +63,24 @@ type scanRequest struct {
 
 // resultJSON is the wire representation of a scan result.
 type resultJSON struct {
-	IP       string  `json:"ip"`
-	Port     int     `json:"port"`
-	Protocol string  `json:"protocol"`
-	State    string  `json:"state"`
-	Service  string  `json:"service,omitempty"`
-	Product  string  `json:"product,omitempty"`
-	Version  string  `json:"version,omitempty"`
-	Extra    string  `json:"extra,omitempty"`
-	CPE      string  `json:"cpe,omitempty"`
-	Banner   string  `json:"banner,omitempty"`
-	Method   string  `json:"method,omitempty"`
-	RTTMs    float64 `json:"rtt_ms"`
-	JA3      string  `json:"ja3,omitempty"`
-	JA3S     string  `json:"ja3s,omitempty"`
-	Favicon  string  `json:"favicon,omitempty"`
-	Title    string  `json:"title,omitempty"`
-	Server   string  `json:"server,omitempty"`
+	IP       string           `json:"ip"`
+	Port     int              `json:"port"`
+	Protocol string           `json:"protocol"`
+	State    string           `json:"state"`
+	Service  string           `json:"service,omitempty"`
+	Product  string           `json:"product,omitempty"`
+	Version  string           `json:"version,omitempty"`
+	Extra    string           `json:"extra,omitempty"`
+	CPE      string           `json:"cpe,omitempty"`
+	Banner   string           `json:"banner,omitempty"`
+	Method   string           `json:"method,omitempty"`
+	RTTMs    float64          `json:"rtt_ms"`
+	JA3      string           `json:"ja3,omitempty"`
+	JA3S     string           `json:"ja3s,omitempty"`
+	Favicon  string           `json:"favicon,omitempty"`
+	Title    string           `json:"title,omitempty"`
+	Server   string           `json:"server,omitempty"`
+	OS       *osdetect.Result `json:"os,omitempty"`
 }
 
 // event is a Server-Sent Event payload.
@@ -333,6 +336,7 @@ func buildScan(req scanRequest) ([]target.Host, []uint16, engine.Config, string,
 		MinConcurrency: engine.DefaultMinConcurrency,
 		MaxConcurrency: engine.DefaultMaxConcurrency,
 		Order:          engine.OrderAuto,
+		OSDetect:       req.OSDetect,
 	}
 
 	if req.SourceAddr != "" {
@@ -411,6 +415,10 @@ func splitFields(s string) []string {
 }
 
 func toResultJSON(res engine.Result) *resultJSON {
+	// An OS detection result carries the fingerprint instead of a port.
+	if res.OS != nil {
+		return &resultJSON{IP: res.Addr.String(), OS: res.OS}
+	}
 	out := &resultJSON{
 		IP:       res.Addr.String(),
 		Port:     int(res.Port),

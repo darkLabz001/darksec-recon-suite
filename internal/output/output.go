@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/engine"
+	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/osdetect"
 )
 
 // Format identifies an output rendering.
@@ -61,24 +62,25 @@ type Writer struct {
 
 // jsonResult is the JSON representation of a scan result.
 type jsonResult struct {
-	IP         string    `json:"ip"`
-	Port       int       `json:"port"`
-	Protocol   string    `json:"protocol"`
-	State      string    `json:"state"`
-	Service    string    `json:"service,omitempty"`
-	Product    string    `json:"product,omitempty"`
-	Version    string    `json:"version,omitempty"`
-	Extra      string    `json:"extra,omitempty"`
-	CPE        string    `json:"cpe,omitempty"`
-	Banner     string    `json:"banner,omitempty"`
-	Confidence float64   `json:"confidence,omitempty"`
-	Method     string    `json:"method,omitempty"`
-	RTTMs      float64   `json:"rtt_ms"`
-	JA3        string    `json:"ja3,omitempty"`
-	JA3S       string    `json:"ja3s,omitempty"`
-	Favicon    string    `json:"favicon,omitempty"`
-	TLS        *tlsInfo  `json:"tls,omitempty"`
-	HTTP       *httpInfo `json:"http,omitempty"`
+	IP         string           `json:"ip"`
+	Port       int              `json:"port"`
+	Protocol   string           `json:"protocol"`
+	State      string           `json:"state"`
+	Service    string           `json:"service,omitempty"`
+	Product    string           `json:"product,omitempty"`
+	Version    string           `json:"version,omitempty"`
+	Extra      string           `json:"extra,omitempty"`
+	CPE        string           `json:"cpe,omitempty"`
+	Banner     string           `json:"banner,omitempty"`
+	Confidence float64          `json:"confidence,omitempty"`
+	Method     string           `json:"method,omitempty"`
+	RTTMs      float64          `json:"rtt_ms"`
+	JA3        string           `json:"ja3,omitempty"`
+	JA3S       string           `json:"ja3s,omitempty"`
+	Favicon    string           `json:"favicon,omitempty"`
+	TLS        *tlsInfo         `json:"tls,omitempty"`
+	HTTP       *httpInfo        `json:"http,omitempty"`
+	OS         *osdetect.Result `json:"os,omitempty"`
 }
 
 type tlsInfo struct {
@@ -141,6 +143,11 @@ func csvHeader() []string {
 
 // Write renders a single result.
 func (w *Writer) Write(res engine.Result) error {
+	// OS detection results are not port rows and are dropped from the CSV
+	// format, whose schema is fixed.
+	if res.OS != nil && w.opts.Format == FormatCSV {
+		return nil
+	}
 	switch w.opts.Format {
 	case FormatJSON:
 		return w.writeJSON(res)
@@ -209,6 +216,9 @@ func (w *Writer) Close() error {
 
 // writeText renders the human readable table.
 func (w *Writer) writeText(res engine.Result) error {
+	if res.OS != nil {
+		return w.writeOSLine(res)
+	}
 	if !w.opts.ShowAll && res.State != engine.StateOpen {
 		return nil
 	}
@@ -252,6 +262,9 @@ func (w *Writer) writeText(res engine.Result) error {
 
 // writeGreppable renders the compact "ip:port service version" form.
 func (w *Writer) writeGreppable(res engine.Result) error {
+	if res.OS != nil {
+		return w.writeOSLine(res)
+	}
 	if res.State != engine.StateOpen {
 		return nil
 	}
@@ -267,6 +280,22 @@ func (w *Writer) writeGreppable(res engine.Result) error {
 		parts = append(parts, version)
 	}
 	_, err := fmt.Fprintln(w.opts.Output, strings.Join(parts, " "))
+	return err
+}
+
+// writeOSLine renders an operating system detection result.
+func (w *Writer) writeOSLine(res engine.Result) error {
+	os := res.OS
+	var line string
+	if os == nil || os.OS == "" {
+		line = fmt.Sprintf("OS: %s unknown", res.Addr)
+	} else {
+		line = fmt.Sprintf("OS: %s %s (%d%% confidence)", res.Addr, os.OS, os.Accuracy)
+	}
+	if os != nil && os.Description != "" {
+		line += " - " + os.Description
+	}
+	_, err := fmt.Fprintln(w.opts.Output, line)
 	return err
 }
 
@@ -311,6 +340,10 @@ func csvRow(res engine.Result) []string {
 }
 
 func toJSON(res engine.Result) jsonResult {
+	// An OS detection result carries the fingerprint instead of a port.
+	if res.OS != nil {
+		return jsonResult{IP: res.Addr.String(), OS: res.OS}
+	}
 	out := jsonResult{
 		IP:       res.Addr.String(),
 		Port:     int(res.Port),
@@ -388,6 +421,9 @@ type templateData struct {
 	Title      string
 	Server     string
 	Status     int
+	OS         string
+	OSAccuracy int
+	OSDesc     string
 }
 
 func templateDataOf(res engine.Result) templateData {
@@ -398,6 +434,12 @@ func templateDataOf(res engine.Result) templateData {
 		Protocol: string(res.Proto),
 		State:    string(res.State),
 		RTTMs:    float64(res.RTT.Microseconds()) / 1000,
+	}
+	if res.OS != nil {
+		data.OS = res.OS.OS
+		data.OSAccuracy = res.OS.Accuracy
+		data.OSDesc = res.OS.Description
+		return data
 	}
 	if res.Service == nil {
 		return data

@@ -64,6 +64,9 @@ type options struct {
 	hostHeader       string
 	fingerprintRules string
 
+	osDetect        bool
+	osDetectTimeout time.Duration
+
 	outputFile string
 	format     string
 	template   string
@@ -208,6 +211,9 @@ func parse(fs *flag.FlagSet, opts *options, args []string, stdout io.Writer) err
 	fs.StringVar(&opts.userAgent, "user-agent", "", "user agent sent with HTTP requests")
 	fs.StringVar(&opts.hostHeader, "host-header", "", "host header sent with HTTP requests")
 	fs.StringVar(&opts.fingerprintRules, "fingerprint-rules", "", "path to a JSON file with extra fingerprint rules")
+	fs.BoolVar(&opts.osDetect, "os", false, "detect the operating system of each host")
+	fs.BoolVar(&opts.osDetect, "os-detect", false, "detect the operating system of each host (shorthand)")
+	fs.DurationVar(&opts.osDetectTimeout, "os-timeout", engine.DefaultOSDetectTimeout, "timeout for the os detection probe")
 
 	fs.StringVar(&opts.outputFile, "output", "", "write results to a file")
 	fs.StringVar(&opts.outputFile, "o", "", "write results to a file (shorthand)")
@@ -537,19 +543,21 @@ func specHasProtocolPrefix(spec string) bool {
 // buildEngineConfig converts the command line into an engine configuration.
 func buildEngineConfig(opts *options) (engine.Config, error) {
 	cfg := engine.Config{
-		Timeout:        opts.timeout,
-		Concurrency:    opts.concurrency,
-		MinConcurrency: opts.minConcurrency,
-		MaxConcurrency: opts.maxConcurrency,
-		Rate:           opts.rate,
-		Detect:         opts.detect && !opts.noDetect,
-		DetectTimeout:  opts.probeTimeout,
-		UserAgent:      opts.userAgent,
-		EnableJA3:      opts.ja3,
-		EnableHTTP:     true,
-		EnableFavicon:  opts.favicon,
-		HostHeader:     opts.hostHeader,
-		Interface:      opts.iface,
+		Timeout:         opts.timeout,
+		Concurrency:     opts.concurrency,
+		MinConcurrency:  opts.minConcurrency,
+		MaxConcurrency:  opts.maxConcurrency,
+		Rate:            opts.rate,
+		Detect:          opts.detect && !opts.noDetect,
+		DetectTimeout:   opts.probeTimeout,
+		UserAgent:       opts.userAgent,
+		EnableJA3:       opts.ja3,
+		EnableHTTP:      true,
+		EnableFavicon:   opts.favicon,
+		HostHeader:      opts.hostHeader,
+		Interface:       opts.iface,
+		OSDetect:        opts.osDetect,
+		OSDetectTimeout: opts.osDetectTimeout,
 	}
 
 	switch strings.ToLower(opts.order) {
