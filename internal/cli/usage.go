@@ -14,9 +14,16 @@ func usage(w io.Writer) {
 	fmt.Fprintf(w, `vantage %s - a fast, precise port scanner
 
 Usage:
+  vantage gui                    launch the graphical interface
   vantage [flags] <target>...
   vantage -p 1-1024 192.168.1.0/24
   vantage -s --ja3 -p 443,8443 example.com
+
+The graphical interface:
+  vantage gui starts a local web server and opens it in a browser, so a
+  scan can be configured and followed live without the command line. Use
+  --listen to change the address (default 127.0.0.1:8787) and --no-open to
+  skip opening a browser.
 
 Targets:
   A target is an IP address, a CIDR block, an address range, a wildcard

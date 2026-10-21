@@ -20,6 +20,7 @@ $ vantage -s --ja3 -p 443,8443 example.com
 
 | Capability | What vantage does |
 | --- | --- |
+| **Graphical interface** | A built in browser dashboard (`vantage gui`) that starts scans, follows them live over Server-Sent Events and exports the results. |
 | **Three engines** | TCP connect (unprivileged, default), raw TCP SYN (half open, `CAP_NET_RAW`), and UDP with per-service payloads. |
 | **Adaptive concurrency** | An AIMD controller modelled on TCP congestion control grows the in-flight window on healthy targets and shrinks it multiplicatively when errors appear. |
 | **Rate limiting** | A token bucket with a configurable burst keeps a scan inside a fixed probes-per-second budget. |
@@ -72,6 +73,34 @@ vantage --engine udp --top-ports 44 192.168.1.1
 # Machine readable output.
 vantage --format jsonl -o scan.jsonl 10.0.0.0/24
 ```
+
+---
+
+## Graphical interface
+
+`vantage gui` starts a local web server and opens a browser dashboard, so a
+scan can be configured, followed and exported without the command line.
+
+```sh
+vantage gui                      # http://127.0.0.1:8787
+vantage gui --listen :9090       # bind another address
+vantage gui --no-open            # don't open a browser automatically
+```
+
+The dashboard provides:
+
+* a **scan form** — targets, ports (or the top-N list), engine, service
+  detection, JA3/favicon fingerprinting, timeout, rate and concurrency;
+* a **live results table** that fills in as each port is answered, with
+  expandable rows for the banner, CPE and fingerprints;
+* **progress counters** for open, closed and filtered ports;
+* **JSON and CSV export** of the accumulated results.
+
+The interface talks to the scanner over a small HTTP API (`/api/scan`,
+`/api/stop`, `/api/events`, `/api/export`) and pushes every result to the
+page with Server-Sent Events, so the table updates in real time. When the
+SYN engine is unavailable the dashboard says so, because the process is not
+running with `CAP_NET_RAW`.
 
 ---
 
@@ -278,6 +307,8 @@ direction, from the leaves upwards:
 ```
 target   → ports   → engine   → proto   → detect   → output
                              ↘ ratelimit ↗
+
+gui (web dashboard) ── engine ── output
 ```
 
 * `internal/target` expands target specifications into hosts.
@@ -287,6 +318,7 @@ target   → ports   → engine   → proto   → detect   → output
 * `internal/detect` holds the fingerprint rules and the favicon hashing.
 * `internal/output` renders results.
 * `internal/ratelimit` implements the token bucket.
+* `internal/gui` serves the embedded dashboard and drives the engines over HTTP.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a detailed walk
 through the pipeline, the concurrency model and the detection flow.

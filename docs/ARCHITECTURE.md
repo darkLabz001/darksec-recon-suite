@@ -29,6 +29,8 @@ github.com/darkLabz001/darksec-recon-suite/vantage
     ├── ratelimit           the token bucket
     ├── stats               live progress reporting
     ├── cli                 flag parsing and the scan driver
+    ├── gui                 the browser dashboard and its HTTP API
+    │   └── assets          the embedded single page application
     └── version             build information
 ```
 
@@ -296,7 +298,54 @@ produces a valid, if partial, output file.
 
 ---
 
-## 7. Testing strategy
+## 7. The graphical interface
+
+`internal/gui` turns the same engine API into a browser dashboard. It is
+reachable through `vantage gui`, which is dispatched from `cli.Run` before
+the flag parser runs, because the subcommand has a flag surface of its own
+(`--listen`, `--open`, `--no-open`).
+
+### 7.1 The embedded application
+
+The front end — a single page of vanilla HTML, CSS and JavaScript — is
+embedded into the binary with `go:embed`, so the whole interface ships in
+the one static executable and needs no build step or web server of its own.
+The binary serves it with `net/http` over an `http.FileServer` rooted at the
+embedded assets directory.
+
+### 7.2 The API
+
+| Route | Purpose |
+| --- | --- |
+| `GET /` | the application |
+| `GET /api/info` | the build version and whether the SYN engine is available |
+| `GET /api/state` | the current scan counters and the accumulated results |
+| `POST /api/scan` | start a scan from a JSON description |
+| `POST /api/stop` | cancel the running scan |
+| `GET /api/events` | a Server-Sent Events stream of results and stats |
+| `GET /api/export?format=json|csv|jsonl` | download the accumulated results |
+
+A `manager` owns at most one scan. Starting a new one cancels the previous,
+clears the accumulator and broadcasts a `start` event with the total probe
+count. Each result is appended to the accumulator and pushed to every
+connected client as a `result` event, while a ticker emits `stats` events
+with the live counters. When the engine returns the manager broadcasts a
+`done` event carrying either an error or a stopped flag.
+
+### 7.3 Live updates over SSE
+
+Results are pushed to the browser with Server-Sent Events rather than
+polling. Each client registers a buffered channel with a `hub`; a slow
+client's channel is dropped rather than allowed to stall the scan. A client
+that connects mid-scan is replayed the `start` event and the current stats,
+and can always pull the full result set from `/api/state` or `/api/export`.
+
+Export reuses `internal/output`, so the CSV and JSON downloads are byte
+compatible with the command line `--format` writers.
+
+---
+
+## 8. Testing strategy
 
 The test suite never touches the network beyond loopback. It starts local
 listeners that speak a real protocol — an HTTP server, an SSH banner, a
@@ -311,6 +360,7 @@ Redis `PONG` — and asserts on what the scanner reports.
 | `engine` | the engines, the ordering, the gate, the controller, the limiter |
 | `output` | every format, the templates, the empty scan |
 | `cli` | flag parsing, the configuration file, the port set, an end to end scan |
+| `gui` | the handlers, the scan lifecycle, the port list, an end to end scan |
 | `ratelimit` | the token bucket with an injected clock |
 | `stats` | the counters, the progress bar, the summary |
 

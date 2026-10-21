@@ -18,6 +18,7 @@ import (
 
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/detect"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/engine"
+	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/gui"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/output"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/ports"
 	"github.com/darkLabz001/darksec-recon-suite/vantage/internal/stats"
@@ -138,6 +139,12 @@ func (d *duration) UnmarshalJSON(data []byte) error {
 
 // Run executes the command line interface and returns a process exit code.
 func Run(args []string, stdout, stderr io.Writer) int {
+	// The graphical interface is dispatched before the flag parser, because
+	// it has a flag surface of its own.
+	if len(args) > 0 && args[0] == "gui" {
+		return gui.Run(args[1:], stdout, stderr)
+	}
+
 	opts := &options{}
 	fs := flag.NewFlagSet("vantage", flag.ContinueOnError)
 	fs.SetOutput(stderr)

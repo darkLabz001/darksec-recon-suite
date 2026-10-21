@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vantage &middot; port scanner</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f172a'/%3E%3Cpath d='M7 16h4M13 10v12M17 6v20M21 13v6M25 16' stroke='%2334d399' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="logo">vantage</span>
+      <span class="tag" id="version">—</span>
+    </div>
+    <div class="status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">idle</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel form-panel">
+      <form id="scan-form" autocomplete="off">
+        <div class="row">
+          <label class="field grow">
+            <span>Targets</span>
+            <input id="targets" type="text" placeholder="127.0.0.1, 10.0.0.0/24, example.com" spellcheck="false">
+          </label>
+        </div>
+        <div class="row">
+          <label class="field grow">
+            <span>Ports</span>
+            <input id="ports" type="text" placeholder="80,443  or  1-1024  or  -  (all)" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Engine</span>
+            <select id="engine">
+              <option value="connect">connect (TCP)</option>
+              <option value="syn" disabled>syn (TCP, raw)</option>
+              <option value="udp">udp</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Timeout</span>
+            <select id="timeout">
+              <option value="500">500 ms</option>
+              <option value="1000" selected>1 s</option>
+              <option value="2000">2 s</option>
+              <option value="5000">5 s</option>
+            </select>
+          </label>
+        </div>
+        <div class="row quick">
+          <span class="quick-label">Top ports</span>
+          <button type="button" data-top="10">10</button>
+          <button type="button" data-top="100">100</button>
+          <button type="button" data-top="1000">1000</button>
+          <span class="quick-label">Detect</span>
+          <label class="check"><input id="detect" type="checkbox" checked> services</label>
+          <label class="check"><input id="ja3" type="checkbox"> JA3</label>
+          <label class="check"><input id="favicon" type="checkbox"> favicon</label>
+          <label class="check"><input id="showall" type="checkbox"> show all ports</label>
+        </div>
+        <details class="advanced">
+          <summary>Advanced</summary>
+          <div class="row">
+            <label class="field">
+              <span>Rate (probes/s)</span>
+              <input id="rate" type="number" min="0" step="1" placeholder="unlimited">
+            </label>
+            <label class="field">
+              <span>Concurrency</span>
+              <input id="concurrency" type="number" min="0" step="1" placeholder="auto">
+            </label>
+            <label class="field">
+              <span>Source address</span>
+              <input id="source-addr" type="text" placeholder="auto" spellcheck="false">
+            </label>
+          </div>
+        </details>
+        <div class="row actions">
+          <button type="submit" class="primary" id="start-btn">Scan</button>
+          <button type="button" id="stop-btn" disabled>Stop</button>
+          <span class="hint" id="form-error"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel stats-panel">
+      <div class="stat"><span class="stat-num" id="s-total">0</span><span class="stat-label">total</span></div>
+      <div class="stat open"><span class="stat-num" id="s-open">0</span><span class="stat-label">open</span></div>
+      <div class="stat closed"><span class="stat-num" id="s-closed">0</span><span class="stat-label">closed</span></div>
+      <div class="stat filtered"><span class="stat-num" id="s-filtered">0</span><span class="stat-label">filtered</span></div>
+      <div class="stat"><span class="stat-num" id="s-elapsed">0.0s</span><span class="stat-label">elapsed</span></div>
+      <div class="progress"><div id="progress-fill"></div></div>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="results-toolbar">
+        <input id="filter" type="text" placeholder="filter by ip, port, service, product, version" spellcheck="false">
+        <div class="chips" id="state-chips">
+          <button class="chip active" data-state="open">open</button>
+          <button class="chip" data-state="closed">closed</button>
+          <button class="chip" data-state="filtered">filtered</button>
+        </div>
+        <div class="export">
+          <a id="export-json" href="/api/export?format=json">JSON</a>
+          <a id="export-csv" href="/api/export?format=csv">CSV</a>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="results">
+          <thead>
+            <tr>
+              <th>Host</th>
+              <th>Port</th>
+              <th>Proto</th>
+              <th>State</th>
+              <th>Service</th>
+              <th>Product</th>
+              <th>Version</th>
+              <th>RTT</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+        <div class="empty" id="empty">Run a scan to see results.</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -37,6 +37,13 @@ build: ## Build the binary into ./bin
 install: ## Install the binary into $(DESTDIR)/usr/local/bin
 	$(GO) install -trimpath -ldflags '$(LDFLAGS)' ./cmd/vantage
 
+.PHONY: install-desktop
+install-desktop: ## Install the desktop launcher and icon for the GUI
+	install -d "$(HOME)/.local/share/applications" "$(HOME)/.local/share/icons/hicolor/scalable/apps"
+	install -m 0644 contrib/vantage.desktop "$(HOME)/.local/share/applications/vantage.desktop"
+	install -m 0644 contrib/vantage.svg "$(HOME)/.local/share/icons/hicolor/scalable/apps/vantage.svg"
+	@echo "desktop launcher installed (restart the desktop shell to see it)"
+
 .PHONY: test
 test: ## Run the test suite
 	$(GO) test ./...

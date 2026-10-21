@@ -432,6 +432,18 @@ func (s *synState) outstanding() int {
 	return len(s.pending)
 }
 
+// SYNAvailable reports whether the process can open raw sockets, which the
+// SYN engine requires. It is used by the graphical interface to advertise
+// the capability before a scan is started.
+func SYNAvailable() bool {
+	fd, err := openRawTCP()
+	if err != nil {
+		return false
+	}
+	syscall.Close(fd)
+	return true
+}
+
 // openRawTCP opens a raw TCP socket with header inclusion enabled.
 func openRawTCP() (int, error) {
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_TCP)

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Vantage
+GenericName=Port Scanner
+Comment=Fast, precise port scanner with a graphical interface
+Exec=vantage gui
+Icon=vantage
+Terminal=false
+Categories=Network;Security;Utility;
+Keywords=port;scan;scanner;network;security;nmap;
+StartupNotify=true
