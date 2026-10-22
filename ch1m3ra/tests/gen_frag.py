@@ -4,7 +4,7 @@ packet, used to exercise the -A fragment reassembly path.
 
 Outputs a classic little-endian libpcap file to the path in argv[1].
 """
-import struct, sys, time
+import struct, sys
 
 LINKTYPE_ETHERNET = 1
 
@@ -43,7 +43,7 @@ def udp(sport, dport, payload):
 def write_pcap(path, frames):
     with open(path, "wb") as f:
         f.write(struct.pack("<IHHiIII", 0xa1b2c3d4, 2, 4, 0, 0, 65535, LINKTYPE_ETHERNET))
-        t = int(time.time())
+        t = 1700000000  # fixed epoch, like the other generators
         for i, fr in enumerate(frames):
             f.write(struct.pack("<IIII", t, i * 1000, len(fr), len(fr)))
             f.write(fr)
