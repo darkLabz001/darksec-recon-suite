@@ -1,0 +1,444 @@
+.TH CH1M3RA 1 "2026" "ch1m3ra 2.0" "User Commands"
+.SH NAME
+.B ch1m3ra \- packet sniffer written from scratch (no libpcap)
+.SH SYNOPSIS
+.B ch1m3ra
+.RI [ options ]
+.SH DESCRIPTION
+.B ch1m3ra
+captures and decodes network traffic using a raw
+.BR AF_PACKET (7)
+socket; no libpcap, scapy or Wireshark code is involved.  Every layer is parsed
+by hand: Ethernet/VLAN, ARP, IPv4/IPv6 (including the extension-header chain),
+TCP/UDP/ICMP, 802.11/radiotap management and control frames, and the application
+protocols on
+top (DNS, TLS, QUIC/HTTP3, HTTP/1.x, HTTP/2, DoH/DoT, SMB2, RDP, LDAP, Kerberos).
+When given a monitor-mode interface it detects the link-layer type automatically
+and decodes the radiotap frames live.
+.PP
+It can capture live, read and write
+.B pcap
+and
+.B pcapng
+files, filter in the kernel with classic BPF, reassemble IPv4/IPv6 fragments and
+TCP streams, track UDP flows, fingerprint TLS clients (JA3/JA4), harvest
+cleartext credentials and hostnames, and drive a full-screen terminal TUI.  A set
+of active offensive tools (ARP poisoning, SYN scanning, DHCP starvation, frame
+replay) can also transmit hand-built frames.
+.PP
+Live capture needs root, or the
+.B cap_net_raw
+and
+.B cap_net_admin
+capabilities (see
+.BR setcap (8)).
+Reading a file with
+.B \-r
+needs no privileges.
+.SH OPTIONS
+.SS Capture source
+.TP
+.B \-i " iface"
+Capture on
+.IR iface .
+Default: all interfaces.
+.TP
+.B \-l
+List interfaces (address, state, MAC) and exit.
+.TP
+.B \-r " file"
+Read packets from a
+.IR file .
+Auto-detects classic pcap and pcapng.
+.TP
+.B \-Z
+Zero-copy capture using a
+.B PACKET_RX_RING
+.TP
+.B \-M
+Do not put the interface into promiscuous mode.
+.SS Output
+.TP
+.B \-w " file"
+Write captured packets to
+.IR file .
+With
+.B \-r
+this filters one capture into another.  A
+.B .pcapng
+extension selects the pcapng container, otherwise classic pcap is written.
+.TP
+.B \-W " MB"
+With
+.BR \-w ,
+rotate to
+.IB base \-NNNNN .ext
+once the current file exceeds
+.I MB
+megabytes.
+.TP
+.B \-\-rotate-secs " n"
+With
+.BR \-w ,
+rotate every
+.I n
+seconds of packet time (works offline too).
+.TP
+.B \-o " fmt"
+Output format:
+.BR text " (default), " json ", " ndjson ", " csv ", " zeek .
+.B json
+and
+.B ndjson
+emit one object per line (ndjson adds a
+.B "schema" : 1
+field);
+.B csv
+emits a header row plus one row per packet;
+.B zeek
+emits a TSV log with a
+.B #fields
+header (path
+.IR ch1m3ra ).
+.TP
+.B \-e
+Relative timestamps: prepend a
+.B +seconds
+column measured from the first printed packet.
+.TP
+.B \-q
+Quiet: one line per packet, no details or payload dump.
+.TP
+.B \-B " len"
+Dump up to
+.I len
+payload bytes (default 96,
+.B 0
+disables the dump).
+.TP
+.B \-C
+Disable colors.
+.TP
+.BI \-\-load\-config " file"
+Apply settings from a config file (simple
+.BI key " = " value
+lines) before any other flag, so explicit command-line flags win.
+.B \-
+or
+.B auto
+means
+.IR ~/.ch1m3rarc .
+.TP
+.B \-\-save\-config
+Write the current settings to
+.I ~/.ch1m3rarc
+and exit.
+.SS Filtering
+.TP
+.B \-P " proto"
+Keep only this protocol: tcp, udp, icmp, icmpv6, arp, ip, ipv6, dns, tls,
+http, frag, ... (\fB\-P\fP is the userspace, fully-parsed filter).
+.TP
+.B \-H " host"
+Keep packets whose source/destination address contains
+.IR host ,
+whose ARP sender/target matches, or whose decoded DNS question name, TLS SNI or
+HTTP Host header matches.
+.TP
+.B \-p " port"
+Keep packets with this source or destination port.
+.TP
+.B \-F " expr"
+Kernel BPF filter.  A tcpdump-like expression is compiled to classic BPF and
+attached with
+.BR SO_ATTACH_FILTER ,
+so the kernel drops non-matching packets before they reach userspace.  The same
+program runs through a built-in interpreter in
+.B \-r
+mode.
+.IP
+Grammar:
+.BI tcp " ... " dns ,
+.BI port " N",
+.BI src | dst " port " N ,
+.BI host " A.B.C.D",
+.BI host " 2001:db8::1",
+.BI src | dst " host " ... ,
+.BR and / && ,
+.BR or / || ,
+.BR not / ! ,
+parentheses, and implicit
+.B and
+between terms.  Extended terms:
+.BR vlan ,
+.BI ether " [src|dst] host " mac ,
+.BI greater " N" " / " less " N"
+(packet length),
+.BI len " > N" " / " len " < N" ,
+and
+.BI tcp[tcpflags]
+with an optional
+.BI & " FLAGS"
+mask and an optional
+.BI = " N" " / " "!= 0"
+comparison.
+.IP
+Fast-path trade-off: offsets assume untagged Ethernet frames without IPv6
+extension headers, so
+.B port
+tests shift out of view on those frames.  Use
+.B \-P
+/
+.B \-p
+(userspace) or add
+.B \-E
+for full parsing.
+.TP
+.B \-E
+Thorough filtering: run
+.B \-F
+through the userspace interpreter even live, so it sees fully parsed frames
+(VLAN tags and IPv6 extension headers included) at the cost of copying every
+frame up first.
+.TP
+.B \-n " count"
+Stop after
+.I count
+packets.
+.TP
+.B \-s " len"
+Snapshot length: bytes captured per packet (default 65535).
+.SS Decoding and analysis
+.TP
+.B \-A
+Reassemble IPv4/IPv6 fragments.  When a datagram is complete it is decoded as a
+whole (TCP/UDP/app layer); incomplete fragments stay shown as
+.BR IP-FRAG .
+.TP
+.BI \-T " id"
+Follow a TCP stream: print the reassembled payload as text and suppress packet
+lines.
+.B 0
+follows every stream; ids appear as
+.B #N
+on packet lines and in the stats.
+.TP
+.B \-D
+Defensive anomaly detection.  Passive detectors for ARP spoofing (a changing
+MAC/IP binding, or one MAC claiming many addresses), ICMPv6 Neighbor
+Advertisement spoofing, rogue DHCP (more than one server on the segment), name
+poisoning (mDNS/LLMNR/NBNS answers binding a name to two hosts, plus WPAD
+takeover), VLAN double-tagging and Cisco DTP frames, and 802.11 rogue-AP (the
+same SSID advertised by two BSSIDs) and deauthentication floods.  Each distinct
+anomaly is reported once to stderr and counted in the stats.  Nothing is
+transmitted.
+.TP
+.B \-\-follow-out " file"
+With
+.BR \-T ,
+write the followed stream's reassembled payloads as a synthetic
+Ethernet/IP/TCP pcap that can be reopened in Wireshark.
+.TP
+.B \-U
+Interactive TUI (needs a tty on stdout).  Keys:
+.B s
+start,
+.B x
+or space stop,
+.B j
+/
+.B k
+scroll (also
+.B PgUp
+/
+.B PgDn
+and
+.BR Ctrl\-U / Ctrl\-D ),
+.B g
+/
+.B G
+jump,
+.B Enter
+toggle the detail pane for the selected packet (then
+.B [
+/
+.B ]
+scroll it),
+.B /
+search (then
+.B n
+/
+.B N
+for the next/previous match),
+.B p
+switch pane (packets / hits / hosts / talkers),
+.B c
+clear,
+.B f
+follow all streams,
+.B q
+quit.
+The packet view also scrolls with the mouse wheel or the arrow keys (SGR mouse
+reporting is enabled while the TUI is up).  The dashboard is built from a title
+row, a metric row (captured/shown/filtered/malformed counts), an "elite" row
+(elapsed time, average and current packet rate, harvested hit/cred/host badges
+and a per-second packet-rate sparkline), an optional active-filter row, the
+per-packet log with a column header and a scrollbar, a key-hint row and a status
+bar.  On terminals at least 100 columns wide the packets view adds a right-hand
+side panel with a protocol-mix histogram, the top talkers and a harvest summary.
+Rows are coloured by protocol and the detail pane shows a sectioned decode
+(L2/L3/L4, application layer, harvested credentials, payload hexdump).
+.TP
+.B \-K
+Harvest cleartext credentials and tokens from payloads (HTTP Basic/Bearer and
+form bodies, FTP, POP3, IMAP, SMTP, Telnet, SNMP, cookies, JWTs) plus service
+banners and the structured SMB2/RDP/LDAP/Kerberos fields.  TLS is never
+decrypted.
+.TP
+.B \-k " file"
+Like
+.BR \-K ,
+and append each hit to
+.IR file .
+.TP
+.B \-O
+Passive OS fingerprinting from each host's initial TTL and TCP options
+(p0f-style).
+.TP
+.B \-Y
+Top-talkers: rank hosts and conversations by bytes.
+.TP
+.B \-N
+Learn hostnames from mDNS, LLMNR, NBNS and DNS responses.
+.TP
+.B \-h ", " \-\-help
+Show the help page.
+.SS Active (offensive) tools
+These build Ethernet frames by hand and transmit them on an
+.B AF_PACKET
+socket.  They require root (or
+.BR cap_net_raw )
+and an explicit flag; use them only on networks you own or are authorised to
+test.  They fail fast with
+.B "socket(AF_PACKET): Operation not permitted"
+when run unprivileged.
+.TP
+.BI \-\-arp\-poison " victim,gateway[,iface]"
+ARP-spoof the pair to MITM their traffic.  On
+.B Ctrl-C
+the true MAC/IP bindings are re-asserted.
+.TP
+.BI \-\-syn\-scan " host[:ports]"
+Half-open TCP port scan.  Use
+.I iface
+via
+.BR \-i .
+Ports are given as
+.B 22,80,443
+or
+.BR 1\-1024 .
+Reports open/closed/filtered and RSTs half-open sockets.
+.TP
+.BI \-\-banner\-grab " host[:ports]"
+Full-connect probe that reads the first bytes each service sends (SSH, SMTP,
+FTP, IMAP, ...), nudging HTTP with a
+.B HEAD
+request.  Use
+.B \-\-banner\-timeout " ms"
+to set the read timeout (default 1500).  Unlike the raw tools this uses the
+kernel TCP stack, so it follows normal routing.
+.TP
+.BI \-\-vlan\-hop " iface:outer:inner"
+Send 802.1ad QinQ double-tagged frames (outer S-tag
+.IR outer ,
+inner C-tag
+.IR inner )
+to test for VLAN-hopping exposure.  Ctrl-C stops it.
+.TP
+.BI \-\-dhcp\-starve " iface[:count]"
+Flood a DHCP server with DISCOVERs using random client MACs to exhaust the pool.
+.TP
+.BI \-\-deauth " bssid[,client][,count]"
+Inject 802.11 deauthentication frames over a monitor\-mode interface given with
+.BR \-i .
+The client defaults to broadcast and the count to forever (Ctrl-C stops it).
+Authorised testing only.
+.TP
+.BI \-\-beacon\-flood " ssid[,count]"
+Flood the air with fake\-AP beacons carrying
+.I ssid
+and a fresh random BSSID each frame, over a monitor\-mode interface.  Authorised
+testing only.
+.TP
+.BI \-\-replay " pcap"
+Re-send frames from a pcap on the interface given with
+.BR \-i .
+.TP
+.BI \-\-rewrite\-src " ip"
+With
+.BR \-\-replay ,
+replace the source IPv4 address and fix the header checksum.
+.TP
+.BI \-\-bench " n"
+Decode the pcap given with
+.B \-r
+.I n
+times through the full decode pipeline and report packets per second and
+nanoseconds per packet.  Useful for sizing the decoder against a link rate.
+.SH EXAMPLES
+.TP
+Live capture on one interface:
+.B sudo ch1m3ra \-i wlan0
+.TP
+Capture only TLS:
+.B sudo ch1m3ra \-i eth0 \-P tcp \-p 443
+.TP
+Zero-copy capture with a kernel filter:
+.B sudo ch1m3ra \-i eth0 \-Z \-F 'tcp and port 443'
+.TP
+Interactive dashboard with harvesting and fingerprinting:
+.B sudo ch1m3ra \-i wlan0 \-K \-O \-U
+.TP
+JSON to jq:
+.B ch1m3ra \-r capture.pcap \-o json | jq \-r 'select(.app=="dns") | .dns.qname'
+.TP
+Inspect streams, then follow one:
+.B ch1m3ra \-r capture.pcap \-q
+.br
+.B ch1m3ra \-r capture.pcap \-T 3
+.TP
+Convert a pcap to pcapng:
+.B ch1m3ra \-r in.pcap \-w out.pcapng
+.TP
+Rotating capture files:
+.B sudo ch1m3ra \-i eth0 \-w cap.pcapng \-W 100 \-\-rotate\-secs 3600
+.TP
+Grab service banners:
+.B ch1m3ra \-\-banner\-grab 10.0.0.1:22,80,8080
+.TP
+Test VLAN-hopping exposure with double-tagged frames:
+.B sudo ch1m3ra \-i eth0 \-\-vlan\-hop eth0:1:100
+.SH FILES
+.TP
+.I tests/check.sh
+assertion suite (
+.B make test
+).
+.TP
+.I tests/gate.sh
+behavior gate against the frozen baseline (
+.B make gate
+).
+.TP
+.I tests/netns.sh
+live-capture and injection harness (
+.BR "make netns" ;
+needs root, skips otherwise).
+.SH NOTES
+Only capture or inject traffic on networks you own or are authorized to test.
+The active tools put real frames on the wire.
+.SH SEE ALSO
+.BR tcpdump (8),
+.BR tshark (1),
+.BR ip (8),
+.BR setcap (8)

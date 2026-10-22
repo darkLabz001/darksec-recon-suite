@@ -1,0 +1,5 @@
+# Build artefacts
+*.o
+/ch1m3ra
+/sniffer
+/.baseline/

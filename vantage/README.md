@@ -40,7 +40,7 @@ The project requires **Go 1.27** or newer and has no external dependencies.
 
 ```sh
 git clone https://github.com/darkLabz001/darksec-recon-suite
-cd vantage
+cd darksec-recon-suite/vantage
 make build          # writes ./bin/vantage
 sudo make install   # optional, installs into /usr/local/bin
 ```
