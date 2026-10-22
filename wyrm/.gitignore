@@ -1,0 +1,20 @@
+# Build artefacts
+/bin/
+/dist/
+/wyrm
+*.exe
+*.test
+*.out
+coverage.out
+
+# Editor and OS noise
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*~
+
+# Local scratch files
+*.local
+*.log
+/tmp/

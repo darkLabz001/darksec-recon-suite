@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>wyrm &middot; wireless security auditor</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="logo">wyrm</span>
+      <span class="tag" id="version">—</span>
+    </div>
+    <div class="status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">idle</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel form-panel">
+      <form id="capture-form" autocomplete="off">
+        <div class="row">
+          <label class="field">
+            <span>Interface</span>
+            <select id="interface"></select>
+          </label>
+          <label class="field grow">
+            <span>Channels</span>
+            <input id="channels" type="text" placeholder="1,6,11 or 36-48" value="1,6,11" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Hop every</span>
+            <input id="hop-interval" type="number" min="50" step="50" value="250">
+            <span class="unit">ms</span>
+          </label>
+          <label class="field">
+            <span>Stop after</span>
+            <input id="duration" type="number" min="0" step="10" placeholder="0 = manual">
+            <span class="unit">s</span>
+          </label>
+        </div>
+        <div class="row quick">
+          <label class="check"><input id="hop" type="checkbox" checked> hop channels</label>
+          <label class="check"><input id="monitor" type="checkbox"> monitor mode</label>
+          <label class="check"><input id="save-pcap" type="checkbox"> keep the capture file</label>
+        </div>
+        <div class="row">
+          <label class="field grow">
+            <span>Packet filter</span>
+            <input id="filter" type="text" placeholder="type mgt or eapol or arp — empty means everything" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Capture file</span>
+            <input id="output" type="text" placeholder="wyrm-capture.pcap" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>sudo password</span>
+            <input id="sudo" type="password" placeholder="only if not root" autocomplete="off">
+          </label>
+        </div>
+        <p class="warn hidden" id="monitor-warn">
+          Monitor mode takes the interface off the network. The connection that
+          is using it now will drop.
+        </p>
+        <div class="row actions">
+          <button type="submit" class="primary" id="start-btn">Capture</button>
+          <button type="button" id="stop-btn" disabled>Stop</button>
+          <span class="hint" id="form-error"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel stats-panel">
+      <div class="stat grade"><span class="stat-num" id="s-grade">—</span><span class="stat-label">grade</span></div>
+      <div class="stat"><span class="stat-num" id="s-findings">0</span><span class="stat-label">findings</span></div>
+      <div class="stat critical"><span class="stat-num" id="s-critical">0</span><span class="stat-label">critical</span></div>
+      <div class="stat high"><span class="stat-num" id="s-high">0</span><span class="stat-label">high</span></div>
+      <div class="stat medium"><span class="stat-num" id="s-medium">0</span><span class="stat-label">medium</span></div>
+      <div class="stat low"><span class="stat-num" id="s-low">0</span><span class="stat-label">low</span></div>
+      <div class="stat"><span class="stat-num" id="s-aps">0</span><span class="stat-label">access points</span></div>
+      <div class="stat"><span class="stat-num" id="s-clients">0</span><span class="stat-label">clients</span></div>
+      <div class="stat"><span class="stat-num" id="s-packets">0</span><span class="stat-label">packets</span></div>
+      <div class="stat"><span class="stat-num" id="s-elapsed">0s</span><span class="stat-label">elapsed</span></div>
+    </section>
+
+    <div class="split">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Access points</h2>
+          <input id="ap-filter" type="text" placeholder="filter" spellcheck="false">
+        </div>
+        <div class="table-wrap">
+          <table id="aps">
+            <thead>
+              <tr>
+                <th>SSID</th>
+                <th>BSSID</th>
+                <th>CH</th>
+                <th>Security</th>
+                <th>PMF</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody id="aps-body"></tbody>
+          </table>
+          <div class="empty" id="aps-empty">Start a capture to see access points.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Findings</h2>
+          <div class="chips" id="sev-chips">
+            <button class="chip active" data-sev="all">all</button>
+            <button class="chip" data-sev="critical">critical</button>
+            <button class="chip" data-sev="high">high</button>
+            <button class="chip" data-sev="medium">medium</button>
+            <button class="chip" data-sev="low">low</button>
+          </div>
+        </div>
+        <div class="findings" id="findings">
+          <div class="empty" id="findings-empty">Start a capture to see findings.</div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Capture</h2>
+        <div class="export">
+          <a id="export-json" href="/api/export?format=json">JSON</a>
+          <a id="export-html" href="/api/export?format=html">HTML</a>
+          <a id="export-text" href="/api/export?format=text">Text</a>
+        </div>
+      </div>
+      <div class="counters" id="counters"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,13 +1,13 @@
 # darksec recon suite
 
-Three reconnaissance tools in one repository — a port scanner, a subdomain
-enumerator and a packet sniffer, each written from scratch.
+A reconnaissance toolkit built from scratch. Four tools, one repo.
 
 | Tool | What it does | Language |
 | --- | --- | --- |
 | [`vantage`](vantage) | Fast, precise port scanner with service and OS detection | Go |
 | [`sunder`](sunder) | Subdomain enumeration with a live terminal UI | Python |
 | [`ch1m3ra`](ch1m3ra) | Cyberpunk packet sniffer, decoder and active toolset | C |
+| [`wyrm`](wyrm) | WPA3/WPA2 wireless security auditor | Go |
 
 ## vantage
 
@@ -42,6 +42,20 @@ interactive TUI. See [`ch1m3ra/README.md`](ch1m3ra/README.md).
 ```sh
 cd ch1m3ra && make
 sudo ./ch1m3ra -i eth0
+```
+
+## wyrm
+
+A WPA3/WPA2 wireless security auditor with no third-party dependencies.
+It parses 802.11, RSN and SAE traffic, validates Dragonfly groups, inspects
+EAP-pwd, flags downgrade and transition-mode issues, and reports on the
+risks present on a capture or a live survey. A local browser dashboard is
+included for live work. See [`wyrm/README.md`](wyrm/README.md).
+
+```sh
+cd wyrm && make build
+./bin/wyrm analyze capture.pcap
+./bin/wyrm gui
 ```
 
 ## Legal and ethical use

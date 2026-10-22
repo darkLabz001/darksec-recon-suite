@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Wyrm
+GenericName=Wireless Security Auditor
+Comment=WPA3 and WPA2 wireless security auditor with a graphical interface
+Exec=wyrm gui
+Icon=wyrm
+Terminal=false
+Categories=Network;Security;Monitor;
+Keywords=wifi;wireless;wpa3;wpa2;sae;dragonfly;audit;security;network;
+StartupNotify=true

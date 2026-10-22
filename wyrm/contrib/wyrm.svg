@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1a15"/>
+      <stop offset="0.55" stop-color="#0e2019"/>
+      <stop offset="1" stop-color="#07140f"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#10b981" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="serp" x1="0.9" y1="0.1" x2="0.2" y2="0.95">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="0.5" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#0f9b8a"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <rect x="2" y="2" width="252" height="252" rx="54" fill="none" stroke="#24503f" stroke-opacity="0.55" stroke-width="2"/>
+  <rect width="256" height="256" rx="56" fill="url(#halo)"/>
+
+  <g stroke="#34d399" stroke-opacity="0.14" stroke-width="2" fill="none">
+    <circle cx="128" cy="132" r="76"/>
+    <circle cx="128" cy="132" r="100"/>
+  </g>
+
+  <g fill="none" stroke="url(#serp)" stroke-width="21" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M 196 68 C 196 68, 60 62, 60 132 C 60 188, 142 200, 164 154 C 180 120, 138 104, 114 126 C 96 142, 108 168, 130 164"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <path d="M 184 46 L 232 62 L 186 82 Z" fill="#34d399"/>
+    <path d="M 186 60 L 214 68 L 188 76 Z" fill="#07140f"/>
+    <circle cx="200" cy="64" r="5" fill="#fbbf24"/>
+  </g>
+
+  <g fill="none" stroke="#5eead4" stroke-opacity="0.45" stroke-width="6" stroke-linecap="round">
+    <path d="M 150 32 A 62 62 0 0 1 218 52"/>
+    <path d="M 138 14 A 82 82 0 0 1 232 44"/>
+  </g>
+</svg>
