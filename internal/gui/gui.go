@@ -629,14 +629,21 @@ func Run(args []string, stdout, stderr io.Writer) int {
 
 	ln, err := net.Listen("tcp", *listen)
 	if err != nil {
+		// If the address is already taken, an instance is likely already
+		// running. Open the browser at it and leave rather than failing.
+		if isAddrInUse(err) {
+			url := browserURL(*listen)
+			fmt.Fprintf(stdout, "vantage gui is already running at %s\n", url)
+			if *openBrowser && !*noOpen {
+				launchBrowser(url)
+			}
+			return ExitOK
+		}
 		fmt.Fprintf(stderr, "vantage gui: listening on %s: %v\n", *listen, err)
 		return ExitError
 	}
 
-	url := fmt.Sprintf("http://%s/", ln.Addr().String())
-	if strings.HasPrefix(ln.Addr().String(), "0.0.0.0:") {
-		url = fmt.Sprintf("http://127.0.0.1:%d/", ln.Addr().(*net.TCPAddr).Port)
-	}
+	url := browserURL(ln.Addr().String())
 
 	fmt.Fprintf(stdout, "vantage gui running at %s\n", url)
 	fmt.Fprintf(stdout, "press Ctrl+C to stop\n")
@@ -668,7 +675,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 
 // launchBrowser opens the given URL in the first available browser.
 func launchBrowser(url string) {
-	for _, candidate := range []string{"xdg-open", "firefox", "firefox-esr", "chromium", "chromium-browser", "google-chrome"} {
+	for _, candidate := range []string{"firefox", "firefox-esr", "xdg-open", "chromium", "chromium-browser", "google-chrome"} {
 		if path, err := exec.LookPath(candidate); err == nil {
 			cmd := exec.Command(path, url)
 			cmd.Stdout = io.Discard
@@ -679,4 +686,22 @@ func launchBrowser(url string) {
 			}
 		}
 	}
+}
+
+// browserURL turns a listen address into a browser URL, mapping wildcard
+// addresses back to the loopback.
+func browserURL(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "http://" + addr + "/"
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, port) + "/"
+}
+
+// isAddrInUse reports whether the error means the address is already bound.
+func isAddrInUse(err error) bool {
+	return errors.Is(err, syscall.EADDRINUSE)
 }

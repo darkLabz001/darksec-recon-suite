@@ -271,3 +271,35 @@ func TestSplitFields(t *testing.T) {
 		}
 	}
 }
+
+func TestBrowserURL(t *testing.T) {
+	cases := map[string]string{
+		"127.0.0.1:8787":   "http://127.0.0.1:8787/",
+		"0.0.0.0:8787":     "http://127.0.0.1:8787/",
+		":8787":            "http://127.0.0.1:8787/",
+		"localhost:9090":   "http://localhost:9090/",
+		"[::1]:8787":       "http://[::1]:8787/",
+		"192.168.1.5:8080": "http://192.168.1.5:8080/",
+	}
+	for in, want := range cases {
+		if got := browserURL(in); got != want {
+			t.Errorf("browserURL(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestIsAddrInUse(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+
+	_, err = net.Listen("tcp", ln.Addr().String())
+	if err == nil {
+		t.Fatal("a second listener on the same address did not fail")
+	}
+	if !isAddrInUse(err) {
+		t.Errorf("the error %v was not recognised as address-in-use", err)
+	}
+}
