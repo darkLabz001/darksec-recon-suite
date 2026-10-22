@@ -1,20 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#14243d"/>
-      <stop offset="1" stop-color="#0b1220"/>
+      <stop offset="0" stop-color="#241654"/>
+      <stop offset="0.55" stop-color="#14113a"/>
+      <stop offset="1" stop-color="#0b0f2a"/>
     </linearGradient>
-    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#34d399"/>
-      <stop offset="1" stop-color="#60a5fa"/>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6d28d9" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6d28d9" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sweep" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
     </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
+
+  <!-- background -->
   <rect width="256" height="256" rx="56" fill="url(#bg)"/>
-  <g stroke="url(#line)" stroke-width="18" stroke-linecap="round" fill="none">
-    <path d="M48 128h28"/>
-    <path d="M92 76v104"/>
-    <path d="M128 40v176"/>
-    <path d="M164 96v64"/>
-    <path d="M208 128"/>
+  <rect x="2" y="2" width="252" height="252" rx="54" fill="none" stroke="#5b4a9e" stroke-opacity="0.35" stroke-width="2"/>
+  <rect width="256" height="256" rx="56" fill="url(#halo)"/>
+
+  <!-- radar rings and crosshair -->
+  <g fill="none" stroke="url(#ring)" stroke-opacity="0.16" stroke-width="2">
+    <circle cx="128" cy="128" r="42"/>
+    <circle cx="128" cy="128" r="68"/>
+    <circle cx="128" cy="128" r="94"/>
+    <line x1="128" y1="34" x2="128" y2="222"/>
+    <line x1="34" y1="128" x2="222" y2="128"/>
   </g>
+
+  <!-- sweeping beam -->
+  <path d="M 128 128 L 130 34 A 96 96 0 0 1 205 76 Z" fill="url(#sweep)"/>
+  <path d="M 130 34 A 96 96 0 0 1 205 76" fill="none" stroke="#67e8f9" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+
+  <!-- discovered ports (blips) -->
+  <g filter="url(#glow)">
+    <circle cx="172" cy="60" r="6" fill="#34d399"/>
+    <circle cx="200" cy="146" r="5" fill="#34d399"/>
+    <circle cx="104" cy="202" r="5" fill="#34d399"/>
+    <circle cx="84" cy="96" r="6" fill="#f0abfc"/>
+  </g>
+
+  <!-- centre -->
+  <circle cx="128" cy="128" r="7" fill="#e879f9" filter="url(#glow)"/>
+  <circle cx="128" cy="128" r="3" fill="#fff" fill-opacity="0.9"/>
 </svg>
