@@ -89,3 +89,7 @@ def main() -> None:
     from .app import SunderApp
 
     SunderApp(prefill=args.targets, options=opts, theme=args.theme).run()
+
+
+if __name__ == "__main__":
+    main()
