@@ -97,15 +97,15 @@ def test_header_audit() -> None:
 
 async def test_records_live() -> None:
     from sunder.records import apex_records, try_axfr
-    from sunder.resolver import make_resolver
+    from sunder.resolver import build_resolver
 
-    resolver = make_resolver()
+    resolver, source = await build_resolver()
     records = await apex_records("example.com", resolver)
     assert records.get("NS"), records
     assert records.get("MX") is not None, records  # key may be absent, but MX query must not crash
     axfr = await try_axfr("example.com", records["NS"], resolver)
     assert axfr is None or (isinstance(axfr, tuple) and len(axfr) == 2), axfr
-    print(f"records ok: {sorted(records)} (axfr={'open' if axfr else 'closed'})")
+    print(f"records ok: {sorted(records)} (axfr={'open' if axfr else 'closed'}, dns={source})")
 
 
 async def test_probe_pipeline() -> None:

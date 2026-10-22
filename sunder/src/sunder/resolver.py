@@ -38,6 +38,48 @@ def make_resolver(timeout: float = 3.0, lifetime: float = 6.0) -> dns.asyncresol
     return resolver
 
 
+def system_resolver(timeout: float = 3.0, lifetime: float = 6.0) -> dns.asyncresolver.Resolver:
+    """Resolver that uses the nameservers configured on this host."""
+    resolver = dns.asyncresolver.Resolver(configure=True)
+    resolver.timeout = timeout
+    resolver.lifetime = lifetime
+    return resolver
+
+
+async def _answers(resolver: dns.asyncresolver.Resolver, host: str) -> bool:
+    """Report whether the resolver can complete a DNS exchange at all."""
+    try:
+        await resolver.resolve(host, "A", raise_on_no_answer=False)
+    except Exception:
+        return False
+    return True
+
+
+async def build_resolver(
+    timeout: float = 3.0, lifetime: float = 6.0, probe: str = "example.com"
+) -> tuple[dns.asyncresolver.Resolver, str]:
+    """Build a resolver, falling back to the system DNS when it is needed.
+
+    Public resolvers are preferred so that queries do not leak to the ISP's
+    DNS.  Some networks block them though - locked-down LANs, VPN-only
+    egress, filtered egress - and every lookup would then fail.  When the
+    public resolvers do not answer, the nameservers from /etc/resolv.conf
+    are used instead.
+
+    Returns the resolver and a label describing where it came from.
+    """
+    public = make_resolver(timeout=timeout, lifetime=lifetime)
+    if await _answers(public, probe):
+        return public, "public"
+
+    fallback = system_resolver(timeout=timeout, lifetime=lifetime)
+    if not fallback.nameservers:
+        return public, "public (unreachable)"
+    if await _answers(fallback, probe):
+        return fallback, "system"
+    return public, "public (unreachable)"
+
+
 async def resolve_ips(host: str, resolver: dns.asyncresolver.Resolver) -> list[str]:
     ips: set[str] = set()
     for rdtype in ("A", "AAAA"):

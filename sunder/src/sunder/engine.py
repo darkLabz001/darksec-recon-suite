@@ -13,7 +13,13 @@ from .fingerprint import analyze_headers
 from .ipinfo import ip_report, summarize
 from .models import Finding, Target, TargetKind
 from .records import apex_records, try_axfr
-from .resolver import detect_wildcard, make_resolver, probe_host, resolve_cname, resolve_ips
+from .resolver import (
+    build_resolver,
+    detect_wildcard,
+    probe_host,
+    resolve_cname,
+    resolve_ips,
+)
 from .sources import bruteforce, crtsh, hackertarget, wayback
 from .sslinfo import cert_info
 from .takeover import cname_service
@@ -82,7 +88,13 @@ class Engine:
             timeout=30,
             follow_redirects=True,
         )
-        self.resolver = make_resolver()
+        self.resolver, dns_source = await build_resolver()
+        if dns_source != "public":
+            self.log(
+                "dns",
+                "warn",
+                f"public resolvers unreachable, using {dns_source} DNS instead",
+            )
         self._dns_sem = asyncio.Semaphore(self.o.resolve_concurrency)
         try:
             await asyncio.gather(*(self._run_one(t) for t in targets))
