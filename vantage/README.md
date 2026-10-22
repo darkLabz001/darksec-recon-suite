@@ -45,6 +45,17 @@ make build          # writes ./bin/vantage
 sudo make install   # optional, installs into /usr/local/bin
 ```
 
+`make install` also grants the binary `cap_net_raw`, which the SYN engine needs.
+Re-running it as a plain user leaves a reminder on screen; apply the capability
+by hand with:
+
+```sh
+sudo setcap cap_net_raw+ep /usr/local/bin/vantage
+```
+
+Note that copying over an existing binary clears its file capabilities, so
+re-apply `setcap` after any manual reinstall.
+
 Or build directly:
 
 ```sh

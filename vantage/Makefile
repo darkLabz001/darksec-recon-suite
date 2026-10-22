@@ -5,6 +5,8 @@
 
 GO      ?= go
 BIN     ?= bin/vantage
+PREFIX  ?= /usr/local
+CAPS    ?= cap_net_raw+ep
 PKG     := github.com/darkLabz001/darksec-recon-suite/vantage
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
@@ -34,8 +36,23 @@ build: ## Build the binary into ./bin
 	@echo "built $(BIN)"
 
 .PHONY: install
-install: ## Install the binary into $(DESTDIR)/usr/local/bin
-	$(GO) install -trimpath -ldflags '$(LDFLAGS)' ./cmd/vantage
+install: build ## Install the binary into $(PREFIX)/bin and grant the raw socket capability
+	install -d "$(DESTDIR)$(PREFIX)/bin"
+	install -m 0755 $(BIN) "$(DESTDIR)$(PREFIX)/bin/vantage"
+	@setcap=$$(command -v setcap 2>/dev/null || echo /sbin/setcap); \
+	if [ ! -x "$$setcap" ]; then \
+		echo "note: setcap not found, the SYN engine will need root"; \
+	elif [ "$$(id -u)" = 0 ]; then \
+		"$$setcap" $(CAPS) "$(DESTDIR)$(PREFIX)/bin/vantage" && echo "granted $(CAPS)"; \
+	elif sudo -n true 2>/dev/null; then \
+		sudo "$$setcap" $(CAPS) "$(DESTDIR)$(PREFIX)/bin/vantage" && echo "granted $(CAPS)"; \
+	else \
+		echo "note: run 'sudo setcap $(CAPS) $(DESTDIR)$(PREFIX)/bin/vantage' to enable the SYN engine"; \
+	fi
+
+.PHONY: uninstall
+uninstall: ## Remove the installed binary
+	rm -f "$(DESTDIR)$(PREFIX)/bin/vantage"
 
 .PHONY: install-desktop
 install-desktop: ## Install the desktop launcher and icon for the GUI
