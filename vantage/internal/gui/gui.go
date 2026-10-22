@@ -226,6 +226,12 @@ func (m *manager) stats() statsJSON {
 	closed := m.counts["closed"]
 	filtered := m.counts["filtered"]
 	done := open + closed + filtered
+	// Before the first scan m.started is the zero time, which would make
+	// time.Since report the age of the universe. Report zero instead.
+	var elapsed float64
+	if !m.started.IsZero() {
+		elapsed = time.Since(m.started).Seconds()
+	}
 	return statsJSON{
 		Running:  m.run != nil,
 		Total:    m.total,
@@ -233,7 +239,7 @@ func (m *manager) stats() statsJSON {
 		Closed:   closed,
 		Filtered: filtered,
 		Done:     done,
-		Elapsed:  time.Since(m.started).Seconds(),
+		Elapsed:  elapsed,
 	}
 }
 

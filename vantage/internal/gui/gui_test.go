@@ -101,6 +101,28 @@ func TestServeIndex(t *testing.T) {
 	}
 }
 
+// The elapsed counter must stay at zero until a scan has actually started,
+// otherwise an idle dashboard reports the age of the universe.
+func TestIdleStateReportsZeroElapsed(t *testing.T) {
+	s, err := NewServer()
+	if err != nil {
+		t.Fatalf("NewServer: %v", err)
+	}
+	rec := do(t, s, http.MethodGet, "/api/state", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	var state struct {
+		Stats statsJSON `json:"stats"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &state); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if state.Stats.Elapsed != 0 {
+		t.Errorf("elapsed = %v, want 0 before any scan", state.Stats.Elapsed)
+	}
+}
+
 func TestScanRejectsBadRequest(t *testing.T) {
 	s, _ := NewServer()
 	rec := do(t, s, http.MethodPost, "/api/scan", "{not json")
