@@ -1,0 +1,1635 @@
+### -r tests/sample.pcap -C -B 32
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : dump up to requested bytes
+
+17:13:20.000000 file     ARP     who-has 192.168.1.1 tell 192.168.1.50  len=42
+17:13:21.000137 file     ARP     192.168.1.1 is-at 11:22:33:44:55:66  len=42
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        seq=1000 ack=0 win=64240 [SYN] csum=ok
+        opts: MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+        payload 37 bytes:
+        0000  47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a  |GET / HTTP/1.1..|
+        0010  48 6f 73 74 3a 20 65 78  61 6d 70 6c 65 2e 63 6f  |Host: example.co|
+        ... 5 more bytes (-B to show more)
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+        IPv4 ttl=64 id=0x1236 ip-csum=ok
+        seq=5000 ack=1041 win=64240 [ACK] csum=BAD
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+        IPv4 ttl=64 id=0x1237 ip-csum=ok
+        len=37 csum=ok
+        DNS  query example.com A
+        payload 29 bytes:
+        0000  33 f7 01 00 00 01 00 00  00 00 00 00 07 65 78 61  |3............exa|
+        0010  6d 70 6c 65 03 63 6f 6d  00 00 01 00 01           |mple.com.....|
+17:13:26.000822 file     ICMP    192.168.1.50 -> 8.8.8.8  len=74 ttl=64
+        IPv4 ttl=64 id=0x1238 ip-csum=ok
+        echo-request code=0 csum=ok id=0x4242 seq=1
+        payload 32 bytes:
+        0000  00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f  |................|
+        0010  10 11 12 13 14 15 16 17  18 19 1a 1b 1c 1d 1e 1f  |................|
+17:13:27.000959 file     ICMP    8.8.8.8 -> 192.168.1.50  len=74 ttl=64
+        IPv4 ttl=64 id=0x1239 ip-csum=ok
+        echo-reply code=0 csum=ok id=0x4242 seq=1
+        payload 32 bytes:
+        0000  00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f  |................|
+        0010  10 11 12 13 14 15 16 17  18 19 1a 1b 1c 1d 1e 1f  |................|
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+        IPv6 hlim=64 ext=hop-by-hop
+        seq=777 ack=0 win=64240 [SYN] csum=ok
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+        IPv6 hlim=64
+        seq=888 ack=0 win=64240 [SYN] csum=ok
+17:13:30.001370 file     ICMPv6  fe80::1 -> fe80::2  len=71 ttl=64
+        IPv6 hlim=64
+        echo-request code=0 csum=ok id=0x1234 seq=1
+        payload 9 bytes:
+        0000  76 36 70 61 79 6c 6f 61  64                       |v6payload|
+17:13:31.001507 file     UDP     10.0.0.5:5353 -> 10.0.0.6:5353(mdns)  len=48 vlan=42 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        len=10 csum=ok
+        payload 2 bytes:
+        0000  00 01                                             |..|
+17:13:32.001644 file     BAD     aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=IPv4  len=20  !
+        ! runt IPv4
+17:13:33.001781 file     EAPOL   aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=EAPOL  len=18
+        payload 4 bytes:
+        0000  01 00 00 00                                       |....|
+17:13:34.001918 file     IP-FRAG 192.168.1.50 -> 10.1.1.1  len=57 ttl=64
+        IPv4 ttl=64 id=0x7777 MF off=1480 ip-csum=ok
+        payload 23 bytes:
+        0000  66 72 61 67 6d 65 6e 74  65 64 2d 6c 34 2d 64 61  |fragmented-l4-da|
+        0010  74 61 2d 68 65 72 65                              |ta-here|
+17:13:35.002055 file     UDP     192.168.1.50:0 -> 8.8.8.8:0  len=34 ttl=64  !
+        ! truncated UDP header
+        IPv4 ttl=64 id=0x2222 ip-csum=BAD
+        len=0 csum=?
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+        IPv4 ttl=64 id=0x1240 ip-csum=ok
+        len=53 csum=ok
+        DNS  NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)
+        payload 45 bytes:
+        0000  33 f7 81 80 00 01 00 01  00 00 00 00 07 65 78 61  |3............exa|
+        0010  6d 70 6c 65 03 63 6f 6d  00 00 01 00 01 c0 0c 00  |mple.com........|
+        ... 13 more bytes (-B to show more)
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+        IPv4 ttl=64 id=0x1241 ip-csum=ok
+        seq=7000 ack=8000 win=64240 [PSH, ACK] csum=ok
+        TLS  ClientHello SNI=example.com ALPN=h2,http/1.1 vers=TLS1.3/TLS1.2 ja3=336f5f33f4497e06a9cd5231997c3982 ja4=t13d0203h2_bd75acfa1e34_e610f2e04ce5
+        payload 101 bytes:
+        0000  16 03 01 00 60 01 00 00  5c 03 03 11 11 11 11 11  |....`...\.......|
+        0010  11 11 11 11 11 11 11 11  11 11 11 11 11 11 11 11  |................|
+        ... 69 more bytes (-B to show more)
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+        IPv4 ttl=64 id=0x1242 ip-csum=ok
+        seq=8000 ack=7043 win=64240 [PSH, ACK] csum=ok
+        TLS  app-data 32 bytes
+        payload 37 bytes:
+        0000  17 03 03 00 20 de ad be  ef de ad be ef de ad be  |.... ...........|
+        0010  ef de ad be ef de ad be  ef de ad be ef de ad be  |................|
+        ... 5 more bytes (-B to show more)
+17:13:39.002603 file     #5 TCP     8.8.8.8:80 -> 192.168.1.50:51347  len=111 ttl=64
+        IPv4 ttl=64 id=0x1243 ip-csum=ok
+        seq=5000 ack=6000 win=64240 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK len=5 server=test
+        payload 57 bytes:
+        0000  48 54 54 50 2f 31 2e 31  20 32 30 30 20 4f 4b 0d  |HTTP/1.1 200 OK.|
+        0010  0a 53 65 72 76 65 72 3a  20 74 65 73 74 0d 0a 43  |.Server: test..C|
+        ... 25 more bytes (-B to show more)
+17:13:40.002740 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=54 ttl=64
+        IPv4 ttl=64 id=0x1244 ip-csum=ok
+        seq=9999 ack=0 win=64240 [SYN] csum=ok
+17:13:41.002877 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=76 ttl=64
+        IPv4 ttl=64 id=0x1245 ip-csum=ok
+        seq=10025 ack=0 win=64240 [PSH, ACK] csum=ok
+        payload 22 bytes:
+        0000  3a 20 72 65 61 73 6d 2e  74 65 73 74 0d 0a 0d 0a  |: reasm.test....|
+        0010  42 4f 44 59 21 21                                 |BODY!!|
+17:13:42.003014 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=79 ttl=64
+        IPv4 ttl=64 id=0x1246 ip-csum=ok
+        seq=10000 ack=0 win=64240 [PSH, ACK] csum=ok
+        HTTP GET /reasm HTTP/1.1
+        payload 25 bytes:
+        0000  47 45 54 20 2f 72 65 61  73 6d 20 48 54 54 50 2f  |GET /reasm HTTP/|
+        0010  31 2e 31 0d 0a 48 6f 73  74                       |1.1..Host|
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : quiet
+
+17:13:20.000000 file     ARP     who-has 192.168.1.1 tell 192.168.1.50  len=42
+17:13:21.000137 file     ARP     192.168.1.1 is-at 11:22:33:44:55:66  len=42
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+17:13:26.000822 file     ICMP    192.168.1.50 -> 8.8.8.8  len=74 ttl=64
+17:13:27.000959 file     ICMP    8.8.8.8 -> 192.168.1.50  len=74 ttl=64
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+17:13:30.001370 file     ICMPv6  fe80::1 -> fe80::2  len=71 ttl=64
+17:13:31.001507 file     UDP     10.0.0.5:5353 -> 10.0.0.6:5353(mdns)  len=48 vlan=42 ttl=64
+17:13:32.001644 file     BAD     aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=IPv4  len=20  !
+        ! runt IPv4
+17:13:33.001781 file     EAPOL   aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=EAPOL  len=18
+17:13:34.001918 file     IP-FRAG 192.168.1.50 -> 10.1.1.1  len=57 ttl=64
+17:13:35.002055 file     UDP     192.168.1.50:0 -> 8.8.8.8:0  len=34 ttl=64  !
+        ! truncated UDP header
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+17:13:39.002603 file     #5 TCP     8.8.8.8:80 -> 192.168.1.50:51347  len=111 ttl=64
+17:13:40.002740 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=54 ttl=64
+17:13:41.002877 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=76 ttl=64
+17:13:42.003014 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=79 ttl=64
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -o json -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : off
+
+{"ts":1700000000.000000,"rel":0.000000,"iface":"file","len":42,"wire":42,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"ARP","arp.op":1,"arp.spa":"192.168.1.50","arp.tpa":"192.168.1.1","arp.sha":"aa:bb:cc:dd:ee:ff","proto":"arp"}
+{"ts":1700000001.000137,"rel":1.000137,"iface":"file","len":42,"wire":42,"eth.src":"11:22:33:44:55:66","eth.dst":"aa:bb:cc:dd:ee:ff","eth.type":"ARP","arp.op":2,"arp.spa":"192.168.1.1","arp.tpa":"192.168.1.50","arp.sha":"11:22:33:44:55:66","proto":"arp"}
+{"ts":1700000002.000274,"rel":2.000274,"iface":"file","len":74,"wire":74,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4660,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":51344,"dport":443,"seq":1000,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","tcp.opts":"MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7","stream":1}
+{"ts":1700000003.000411,"rel":3.000411,"iface":"file","len":91,"wire":91,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4661,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":51344,"dport":443,"seq":1001,"ack":5000,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":1,"app":"http","http.line":"GET / HTTP/1.1","http.host":"example.com"}
+{"ts":1700000004.000548,"rel":4.000548,"iface":"file","len":54,"wire":54,"eth.src":"11:22:33:44:55:66","eth.dst":"aa:bb:cc:dd:ee:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4662,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":443,"dport":51344,"seq":5000,"ack":1041,"win":64240,"flags":"ACK","tcp.csum":"bad","stream":1}
+{"ts":1700000005.000685,"rel":5.000685,"iface":"file","len":71,"wire":71,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4663,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"udp","sport":53325,"dport":53,"udp.len":37,"udp.csum":"ok","app":"dns","dns.qname":"example.com","dns.qtype":"A","dns.qr":"query"}
+{"ts":1700000006.000822,"rel":6.000822,"iface":"file","len":74,"wire":74,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4664,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"icmp","icmp.type":8,"icmp.code":0,"icmp.name":"echo-request"}
+{"ts":1700000007.000959,"rel":7.000959,"iface":"file","len":74,"wire":74,"eth.src":"11:22:33:44:55:66","eth.dst":"aa:bb:cc:dd:ee:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4665,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"icmp","icmp.type":0,"icmp.code":0,"icmp.name":"echo-reply"}
+{"ts":1700000008.001096,"rel":8.001096,"iface":"file","len":82,"wire":82,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv6","ip.ver":6,"src":"2001:db8::1","dst":"2001:db8::2","ttl":64,"ipv6.ext":"hop-by-hop","proto":"tcp","sport":40000,"dport":443,"seq":777,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","stream":2}
+{"ts":1700000009.001233,"rel":9.001233,"iface":"file","len":74,"wire":74,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv6","ip.ver":6,"src":"2001:db8::3","dst":"2001:db8::4","ttl":64,"proto":"tcp","sport":40001,"dport":8443,"seq":888,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","stream":3}
+{"ts":1700000010.001370,"rel":10.001370,"iface":"file","len":71,"wire":71,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv6","ip.ver":6,"src":"fe80::1","dst":"fe80::2","ttl":64,"proto":"icmpv6","icmp.type":128,"icmp.code":0,"icmp.name":"echo-request"}
+{"ts":1700000011.001507,"rel":11.001507,"iface":"file","len":48,"wire":48,"vlan":42,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"10.0.0.5","dst":"10.0.0.6","ttl":64,"ip.id":4660,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"udp","sport":5353,"dport":5353,"udp.len":10,"udp.csum":"ok"}
+{"ts":1700000012.001644,"rel":12.001644,"iface":"file","len":20,"wire":20,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","proto":"other","error":"runt IPv4","malformed":true}
+{"ts":1700000013.001781,"rel":13.001781,"iface":"file","len":18,"wire":18,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"EAPOL","proto":"other"}
+{"ts":1700000014.001918,"rel":14.001918,"iface":"file","len":57,"wire":57,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.1.1.1","ttl":64,"ip.id":30583,"ip.df":false,"ip.mf":true,"ip.off":1480,"ip.csum":"ok","proto":"ip"}
+{"ts":1700000015.002055,"rel":15.002055,"iface":"file","len":34,"wire":34,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":8738,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"bad","proto":"udp","sport":0,"dport":0,"udp.len":0,"udp.csum":"unknown","error":"truncated UDP header","malformed":true}
+{"ts":1700000016.002192,"rel":16.002192,"iface":"file","len":87,"wire":87,"eth.src":"11:22:33:44:55:66","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4672,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"udp","sport":53,"dport":53325,"udp.len":53,"udp.csum":"ok","app":"dns","dns.qname":"example.com","dns.qtype":"A","dns.qr":"response","dns.rcode":"NOERROR","dns.answers":1,"dns.first":"example.com A 93.184.216.34"}
+{"ts":1700000017.002329,"rel":17.002329,"iface":"file","len":155,"wire":155,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4673,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":51346,"dport":443,"seq":7000,"ack":8000,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":4,"app":"tls","tls.type":"client-hello","tls.version":"TLS1.0","tls.sni":"example.com","tls.alpn":"h2,http/1.1","tls.ja3":"336f5f33f4497e06a9cd5231997c3982","tls.ja3_str":"771,4865-49199,0-16-43,,","tls.ja4":"t13d0203h2_bd75acfa1e34_e610f2e04ce5"}
+{"ts":1700000018.002466,"rel":18.002466,"iface":"file","len":91,"wire":91,"eth.src":"11:22:33:44:55:66","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4674,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":443,"dport":51346,"seq":8000,"ack":7043,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":4,"app":"tls","tls.type":"app-data","tls.version":"TLS1.2"}
+{"ts":1700000019.002603,"rel":19.002603,"iface":"file","len":111,"wire":111,"eth.src":"11:22:33:44:55:66","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4675,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":80,"dport":51347,"seq":5000,"ack":6000,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":5,"app":"http","http.line":"HTTP/1.1 200 OK","http.code":200}
+{"ts":1700000020.002740,"rel":20.002740,"iface":"file","len":54,"wire":54,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.2.2.2","ttl":64,"ip.id":4676,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":52000,"dport":80,"seq":9999,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","stream":6}
+{"ts":1700000021.002877,"rel":21.002877,"iface":"file","len":76,"wire":76,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.2.2.2","ttl":64,"ip.id":4677,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":52000,"dport":80,"seq":10025,"ack":0,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":6}
+{"ts":1700000022.003014,"rel":22.003014,"iface":"file","len":79,"wire":79,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.2.2.2","ttl":64,"ip.id":4678,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":52000,"dport":80,"seq":10000,"ack":0,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":6,"app":"http","http.line":"GET /reasm HTTP/1.1"}
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -o csv -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : off
+
+ts,rel,iface,dir,proto,src,sport,dst,dport,len,vlan,info,user,pass,where,banner,os
+1700000000.000000,0.000000,"file",,"arp","",,"",,42,,"op=1 192.168.1.50 -> 192.168.1.1","","","","",""
+1700000001.000137,1.000137,"file",,"arp","",,"",,42,,"op=2 192.168.1.1 -> 192.168.1.50","","","","",""
+1700000002.000274,2.000274,"file",,"tcp","192.168.1.50",51344,"8.8.8.8",443,74,,"SYN","","","","",""
+1700000003.000411,3.000411,"file",,"tcp","192.168.1.50",51344,"8.8.8.8",443,91,,"GET / HTTP/1.1 host=example.com","","","","",""
+1700000004.000548,4.000548,"file",,"tcp","8.8.8.8",443,"192.168.1.50",51344,54,,"ACK","","","","",""
+1700000005.000685,5.000685,"file",,"udp","192.168.1.50",53325,"8.8.8.8",53,71,,"query example.com A","","","","",""
+1700000006.000822,6.000822,"file",,"icmp","192.168.1.50",,"8.8.8.8",,74,,"echo-request code=0","","","","",""
+1700000007.000959,7.000959,"file",,"icmp","8.8.8.8",,"192.168.1.50",,74,,"echo-reply code=0","","","","",""
+1700000008.001096,8.001096,"file",,"tcp","2001:db8::1",40000,"2001:db8::2",443,82,,"SYN","","","","",""
+1700000009.001233,9.001233,"file",,"tcp","2001:db8::3",40001,"2001:db8::4",8443,74,,"SYN","","","","",""
+1700000010.001370,10.001370,"file",,"icmpv6","fe80::1",,"fe80::2",,71,,"echo-request code=0","","","","",""
+1700000011.001507,11.001507,"file",,"udp","10.0.0.5",5353,"10.0.0.6",5353,48,42,"","","","","",""
+1700000012.001644,12.001644,"file",,"other","",,"",,20,,"runt IPv4","","","","",""
+1700000013.001781,13.001781,"file",,"other","",,"",,18,,"","","","","",""
+1700000014.001918,14.001918,"file",,"ip","192.168.1.50",,"10.1.1.1",,57,,"","","","","",""
+1700000015.002055,15.002055,"file",,"udp","192.168.1.50",0,"8.8.8.8",0,34,,"truncated UDP header","","","","",""
+1700000016.002192,16.002192,"file",,"udp","8.8.8.8",53,"192.168.1.50",53325,87,,"NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)","","","","",""
+1700000017.002329,17.002329,"file",,"tcp","192.168.1.50",51346,"8.8.8.8",443,155,,"ClientHello SNI=example.com ALPN=h2,http/1.1 vers=TLS1.3/TLS1.2 ja3=336f5f33f4497e06a9cd5231997c3982 ja4=t13d0203h2_bd75acfa1e34_e610f2e04ce5","","","","",""
+1700000018.002466,18.002466,"file",,"tcp","8.8.8.8",443,"192.168.1.50",51346,91,,"app-data 32 bytes","","","","",""
+1700000019.002603,19.002603,"file",,"tcp","8.8.8.8",80,"192.168.1.50",51347,111,,"HTTP/1.1 200 OK len=5 server=test","","","","",""
+1700000020.002740,20.002740,"file",,"tcp","192.168.1.50",52000,"10.2.2.2",80,54,,"SYN","","","","",""
+1700000021.002877,21.002877,"file",,"tcp","192.168.1.50",52000,"10.2.2.2",80,76,,"PSH, ACK","","","","",""
+1700000022.003014,22.003014,"file",,"tcp","192.168.1.50",52000,"10.2.2.2",80,79,,"GET /reasm HTTP/1.1","","","","",""
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -e -o json
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : dump up to requested bytes
+
+{"ts":1700000000.000000,"rel":0.000000,"iface":"file","len":42,"wire":42,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"ARP","arp.op":1,"arp.spa":"192.168.1.50","arp.tpa":"192.168.1.1","arp.sha":"aa:bb:cc:dd:ee:ff","proto":"arp"}
+{"ts":1700000001.000137,"rel":1.000137,"iface":"file","len":42,"wire":42,"eth.src":"11:22:33:44:55:66","eth.dst":"aa:bb:cc:dd:ee:ff","eth.type":"ARP","arp.op":2,"arp.spa":"192.168.1.1","arp.tpa":"192.168.1.50","arp.sha":"11:22:33:44:55:66","proto":"arp"}
+{"ts":1700000002.000274,"rel":2.000274,"iface":"file","len":74,"wire":74,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4660,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":51344,"dport":443,"seq":1000,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","tcp.opts":"MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7","stream":1}
+{"ts":1700000003.000411,"rel":3.000411,"iface":"file","len":91,"wire":91,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4661,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":51344,"dport":443,"seq":1001,"ack":5000,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":1,"app":"http","http.line":"GET / HTTP/1.1","http.host":"example.com","payload":"474554202f20485454502f312e310d0a486f73743a206578616d706c652e636f6d0d0a0d0a"}
+{"ts":1700000004.000548,"rel":4.000548,"iface":"file","len":54,"wire":54,"eth.src":"11:22:33:44:55:66","eth.dst":"aa:bb:cc:dd:ee:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4662,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":443,"dport":51344,"seq":5000,"ack":1041,"win":64240,"flags":"ACK","tcp.csum":"bad","stream":1}
+{"ts":1700000005.000685,"rel":5.000685,"iface":"file","len":71,"wire":71,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4663,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"udp","sport":53325,"dport":53,"udp.len":37,"udp.csum":"ok","app":"dns","dns.qname":"example.com","dns.qtype":"A","dns.qr":"query","payload":"33f701000001000000000000076578616d706c6503636f6d0000010001"}
+{"ts":1700000006.000822,"rel":6.000822,"iface":"file","len":74,"wire":74,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4664,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"icmp","icmp.type":8,"icmp.code":0,"icmp.name":"echo-request","payload":"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"}
+{"ts":1700000007.000959,"rel":7.000959,"iface":"file","len":74,"wire":74,"eth.src":"11:22:33:44:55:66","eth.dst":"aa:bb:cc:dd:ee:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4665,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"icmp","icmp.type":0,"icmp.code":0,"icmp.name":"echo-reply","payload":"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"}
+{"ts":1700000008.001096,"rel":8.001096,"iface":"file","len":82,"wire":82,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv6","ip.ver":6,"src":"2001:db8::1","dst":"2001:db8::2","ttl":64,"ipv6.ext":"hop-by-hop","proto":"tcp","sport":40000,"dport":443,"seq":777,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","stream":2}
+{"ts":1700000009.001233,"rel":9.001233,"iface":"file","len":74,"wire":74,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv6","ip.ver":6,"src":"2001:db8::3","dst":"2001:db8::4","ttl":64,"proto":"tcp","sport":40001,"dport":8443,"seq":888,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","stream":3}
+{"ts":1700000010.001370,"rel":10.001370,"iface":"file","len":71,"wire":71,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv6","ip.ver":6,"src":"fe80::1","dst":"fe80::2","ttl":64,"proto":"icmpv6","icmp.type":128,"icmp.code":0,"icmp.name":"echo-request","payload":"76367061796c6f6164"}
+{"ts":1700000011.001507,"rel":11.001507,"iface":"file","len":48,"wire":48,"vlan":42,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"10.0.0.5","dst":"10.0.0.6","ttl":64,"ip.id":4660,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"udp","sport":5353,"dport":5353,"udp.len":10,"udp.csum":"ok","payload":"0001"}
+{"ts":1700000012.001644,"rel":12.001644,"iface":"file","len":20,"wire":20,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","proto":"other","error":"runt IPv4","malformed":true}
+{"ts":1700000013.001781,"rel":13.001781,"iface":"file","len":18,"wire":18,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"EAPOL","proto":"other","payload":"01000000"}
+{"ts":1700000014.001918,"rel":14.001918,"iface":"file","len":57,"wire":57,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.1.1.1","ttl":64,"ip.id":30583,"ip.df":false,"ip.mf":true,"ip.off":1480,"ip.csum":"ok","proto":"ip","payload":"667261676d656e7465642d6c342d646174612d68657265"}
+{"ts":1700000015.002055,"rel":15.002055,"iface":"file","len":34,"wire":34,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":8738,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"bad","proto":"udp","sport":0,"dport":0,"udp.len":0,"udp.csum":"unknown","error":"truncated UDP header","malformed":true}
+{"ts":1700000016.002192,"rel":16.002192,"iface":"file","len":87,"wire":87,"eth.src":"11:22:33:44:55:66","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4672,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"udp","sport":53,"dport":53325,"udp.len":53,"udp.csum":"ok","app":"dns","dns.qname":"example.com","dns.qtype":"A","dns.qr":"response","dns.rcode":"NOERROR","dns.answers":1,"dns.first":"example.com A 93.184.216.34","payload":"33f781800001000100000000076578616d706c6503636f6d0000010001c00c000100010000012c00045db8d822"}
+{"ts":1700000017.002329,"rel":17.002329,"iface":"file","len":155,"wire":155,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"8.8.8.8","ttl":64,"ip.id":4673,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":51346,"dport":443,"seq":7000,"ack":8000,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":4,"app":"tls","tls.type":"client-hello","tls.version":"TLS1.0","tls.sni":"example.com","tls.alpn":"h2,http/1.1","tls.ja3":"336f5f33f4497e06a9cd5231997c3982","tls.ja3_str":"771,4865-49199,0-16-43,,","tls.ja4":"t13d0203h2_bd75acfa1e34_e610f2e04ce5","payload":"16030100600100005c030311111111111111111111111111111111111111111111111111111111111111110000041301c02f0100002f00000010000e00000b6578616d706c652e636f6d0010000e000c02683208687474702f312e31002b0005"}
+{"ts":1700000018.002466,"rel":18.002466,"iface":"file","len":91,"wire":91,"eth.src":"11:22:33:44:55:66","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4674,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":443,"dport":51346,"seq":8000,"ack":7043,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":4,"app":"tls","tls.type":"app-data","tls.version":"TLS1.2","payload":"1703030020deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"}
+{"ts":1700000019.002603,"rel":19.002603,"iface":"file","len":111,"wire":111,"eth.src":"11:22:33:44:55:66","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"8.8.8.8","dst":"192.168.1.50","ttl":64,"ip.id":4675,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":80,"dport":51347,"seq":5000,"ack":6000,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":5,"app":"http","http.line":"HTTP/1.1 200 OK","http.code":200,"payload":"485454502f312e3120323030204f4b0d0a5365727665723a20746573740d0a436f6e74656e742d4c656e6774683a20350d0a0d0a68656c6c6f"}
+{"ts":1700000020.002740,"rel":20.002740,"iface":"file","len":54,"wire":54,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.2.2.2","ttl":64,"ip.id":4676,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":52000,"dport":80,"seq":9999,"ack":0,"win":64240,"flags":"SYN","tcp.csum":"ok","stream":6}
+{"ts":1700000021.002877,"rel":21.002877,"iface":"file","len":76,"wire":76,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.2.2.2","ttl":64,"ip.id":4677,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":52000,"dport":80,"seq":10025,"ack":0,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":6,"payload":"3a20726561736d2e746573740d0a0d0a424f44592121"}
+{"ts":1700000022.003014,"rel":22.003014,"iface":"file","len":79,"wire":79,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"ff:ff:ff:ff:ff:ff","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.2.2.2","ttl":64,"ip.id":4678,"ip.df":false,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":52000,"dport":80,"seq":10000,"ack":0,"win":64240,"flags":"PSH, ACK","tcp.csum":"ok","stream":6,"app":"http","http.line":"GET /reasm HTTP/1.1","payload":"474554202f726561736d20485454502f312e310d0a486f7374"}
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -K -O -Y -N -B 64
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  harvest : credentials/tokens/banners
+  finger  : passive OS fingerprinting on
+  talkers : top-talker ranking on
+  names   : mDNS/LLMNR/NBNS/DNS harvesting on
+  payload : dump up to requested bytes
+
+17:13:20.000000 file     ARP     who-has 192.168.1.1 tell 192.168.1.50  len=42
+17:13:21.000137 file     ARP     192.168.1.1 is-at 11:22:33:44:55:66  len=42
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        seq=1000 ack=0 win=64240 [SYN] csum=ok
+        opts: MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7
+        OS   Linux 5.x/6.x
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+        OS   Linux 5.x/6.x
+        payload 37 bytes:
+        0000  47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a  |GET / HTTP/1.1..|
+        0010  48 6f 73 74 3a 20 65 78  61 6d 70 6c 65 2e 63 6f  |Host: example.co|
+        0020  6d 0d 0a 0d 0a                                    |m....|
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+        IPv4 ttl=64 id=0x1236 ip-csum=ok
+        seq=5000 ack=1041 win=64240 [ACK] csum=BAD
+        OS   Unix-like
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+        IPv4 ttl=64 id=0x1237 ip-csum=ok
+        len=37 csum=ok
+        DNS  query example.com A
+        OS   Linux 5.x/6.x
+        payload 29 bytes:
+        0000  33 f7 01 00 00 01 00 00  00 00 00 00 07 65 78 61  |3............exa|
+        0010  6d 70 6c 65 03 63 6f 6d  00 00 01 00 01           |mple.com.....|
+17:13:26.000822 file     ICMP    192.168.1.50 -> 8.8.8.8  len=74 ttl=64
+        IPv4 ttl=64 id=0x1238 ip-csum=ok
+        echo-request code=0 csum=ok id=0x4242 seq=1
+        OS   Linux 5.x/6.x
+        payload 32 bytes:
+        0000  00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f  |................|
+        0010  10 11 12 13 14 15 16 17  18 19 1a 1b 1c 1d 1e 1f  |................|
+17:13:27.000959 file     ICMP    8.8.8.8 -> 192.168.1.50  len=74 ttl=64
+        IPv4 ttl=64 id=0x1239 ip-csum=ok
+        echo-reply code=0 csum=ok id=0x4242 seq=1
+        OS   Unix-like
+        payload 32 bytes:
+        0000  00 01 02 03 04 05 06 07  08 09 0a 0b 0c 0d 0e 0f  |................|
+        0010  10 11 12 13 14 15 16 17  18 19 1a 1b 1c 1d 1e 1f  |................|
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+        IPv6 hlim=64 ext=hop-by-hop
+        seq=777 ack=0 win=64240 [SYN] csum=ok
+        OS   Unix-like
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+        IPv6 hlim=64
+        seq=888 ack=0 win=64240 [SYN] csum=ok
+        OS   Unix-like
+17:13:30.001370 file     ICMPv6  fe80::1 -> fe80::2  len=71 ttl=64
+        IPv6 hlim=64
+        echo-request code=0 csum=ok id=0x1234 seq=1
+        OS   Unix-like
+        payload 9 bytes:
+        0000  76 36 70 61 79 6c 6f 61  64                       |v6payload|
+17:13:31.001507 file     UDP     10.0.0.5:5353 -> 10.0.0.6:5353(mdns)  len=48 vlan=42 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        len=10 csum=ok
+        OS   Unix-like
+        payload 2 bytes:
+        0000  00 01                                             |..|
+17:13:32.001644 file     BAD     aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=IPv4  len=20  !
+        ! runt IPv4
+17:13:33.001781 file     EAPOL   aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=EAPOL  len=18
+        payload 4 bytes:
+        0000  01 00 00 00                                       |....|
+17:13:34.001918 file     IP-FRAG 192.168.1.50 -> 10.1.1.1  len=57 ttl=64
+        IPv4 ttl=64 id=0x7777 MF off=1480 ip-csum=ok
+        OS   Linux 5.x/6.x
+        payload 23 bytes:
+        0000  66 72 61 67 6d 65 6e 74  65 64 2d 6c 34 2d 64 61  |fragmented-l4-da|
+        0010  74 61 2d 68 65 72 65                              |ta-here|
+17:13:35.002055 file     UDP     192.168.1.50:0 -> 8.8.8.8:0  len=34 ttl=64  !
+        ! truncated UDP header
+        IPv4 ttl=64 id=0x2222 ip-csum=BAD
+        len=0 csum=?
+        OS   Linux 5.x/6.x
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+        IPv4 ttl=64 id=0x1240 ip-csum=ok
+        len=53 csum=ok
+        DNS  NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)
+        OS   Unix-like
+        payload 45 bytes:
+        0000  33 f7 81 80 00 01 00 01  00 00 00 00 07 65 78 61  |3............exa|
+        0010  6d 70 6c 65 03 63 6f 6d  00 00 01 00 01 c0 0c 00  |mple.com........|
+        0020  01 00 01 00 00 01 2c 00  04 5d b8 d8 22           |......,..].."|
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+        IPv4 ttl=64 id=0x1241 ip-csum=ok
+        seq=7000 ack=8000 win=64240 [PSH, ACK] csum=ok
+        TLS  ClientHello SNI=example.com ALPN=h2,http/1.1 vers=TLS1.3/TLS1.2 ja3=336f5f33f4497e06a9cd5231997c3982 ja4=t13d0203h2_bd75acfa1e34_e610f2e04ce5
+        OS   Linux 5.x/6.x
+        payload 101 bytes:
+        0000  16 03 01 00 60 01 00 00  5c 03 03 11 11 11 11 11  |....`...\.......|
+        0010  11 11 11 11 11 11 11 11  11 11 11 11 11 11 11 11  |................|
+        0020  11 11 11 11 11 11 11 11  11 11 11 00 00 04 13 01  |................|
+        0030  c0 2f 01 00 00 2f 00 00  00 10 00 0e 00 00 0b 65  |./.../.........e|
+        ... 37 more bytes (-B to show more)
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+        IPv4 ttl=64 id=0x1242 ip-csum=ok
+        seq=8000 ack=7043 win=64240 [PSH, ACK] csum=ok
+        TLS  app-data 32 bytes
+        OS   Unix-like
+        payload 37 bytes:
+        0000  17 03 03 00 20 de ad be  ef de ad be ef de ad be  |.... ...........|
+        0010  ef de ad be ef de ad be  ef de ad be ef de ad be  |................|
+        0020  ef de ad be ef                                    |.....|
+17:13:39.002603 file     #5 TCP     8.8.8.8:80 -> 192.168.1.50:51347  len=111 ttl=64
+        IPv4 ttl=64 id=0x1243 ip-csum=ok
+        seq=5000 ack=6000 win=64240 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK len=5 server=test
+        OS   Unix-like
+        payload 57 bytes:
+        0000  48 54 54 50 2f 31 2e 31  20 32 30 30 20 4f 4b 0d  |HTTP/1.1 200 OK.|
+        0010  0a 53 65 72 76 65 72 3a  20 74 65 73 74 0d 0a 43  |.Server: test..C|
+        0020  6f 6e 74 65 6e 74 2d 4c  65 6e 67 74 68 3a 20 35  |ontent-Length: 5|
+        0030  0d 0a 0d 0a 68 65 6c 6c  6f                       |....hello|
+17:13:40.002740 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=54 ttl=64
+        IPv4 ttl=64 id=0x1244 ip-csum=ok
+        seq=9999 ack=0 win=64240 [SYN] csum=ok
+        OS   Linux 5.x/6.x
+17:13:41.002877 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=76 ttl=64
+        IPv4 ttl=64 id=0x1245 ip-csum=ok
+        seq=10025 ack=0 win=64240 [PSH, ACK] csum=ok
+        OS   Linux 5.x/6.x
+        payload 22 bytes:
+        0000  3a 20 72 65 61 73 6d 2e  74 65 73 74 0d 0a 0d 0a  |: reasm.test....|
+        0010  42 4f 44 59 21 21                                 |BODY!!|
+17:13:42.003014 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=79 ttl=64
+        IPv4 ttl=64 id=0x1246 ip-csum=ok
+        seq=10000 ack=0 win=64240 [PSH, ACK] csum=ok
+        HTTP GET /reasm HTTP/1.1
+        OS   Linux 5.x/6.x
+        payload 25 bytes:
+        0000  47 45 54 20 2f 72 65 61  73 6d 20 48 54 54 50 2f  |GET /reasm HTTP/|
+        0010  31 2e 31 0d 0a 48 6f 73  74                       |1.1..Host|
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  names learned: 1
+  streams 9 (6 tcp, 3 udp)
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+  udp flows:
+    u1   8.8.8.8:53               <-> 192.168.1.50:53325       1/1 dgram  2p  0.000s
+    u2   10.0.0.5:5353            <-> 10.0.0.6:5353            1/0 dgram  1p  0.000s
+    u3   8.8.8.8:0                <-> 192.168.1.50:0           0/1 dgram  1p  0.000s
+  hosts (passive OS fingerprint)
+    192.168.1.50                   ttl=64  Linux 5.x/6.x                765 B  10p  20.00s
+    8.8.8.8                        ttl=64  -                            417 B  5p  15.00s
+    2001:db8::1                    ttl=64  Unix-like                    82 B  1p  0.00s
+    2001:db8::3                    ttl=64  Unix-like                    74 B  1p  0.00s
+    fe80::1                        ttl=0   -                            71 B  1p  0.00s
+    10.0.0.5                       ttl=0   -                            48 B  1p  0.00s
+    93.184.216.34                  ttl=0   -                            0 B  0p  0.00s  name=example.com
+  top conversations (by bytes)
+    192.168.1.50:51346                 <-> 8.8.8.8:443                        246 B  2p
+    192.168.1.50:51344                 <-> 8.8.8.8:443                        219 B  3p
+    192.168.1.50:52000                 <-> 10.2.2.2:80                        209 B  3p
+    192.168.1.50:53325                 <-> 8.8.8.8:53                         158 B  2p
+    192.168.1.50                       <-> 8.8.8.8                            148 B  2p
+    8.8.8.8:80                         <-> 192.168.1.50:51347                 111 B  1p
+    [2001:db8::1]:40000                <-> [2001:db8::2]:443                  82 B  1p
+    [2001:db8::3]:40001                <-> [2001:db8::4]:8443                 74 B  1p
+    fe80::1                            <-> fe80::2                            71 B  1p
+    192.168.1.50                       <-> 10.1.1.1                           57 B  1p
+    10.0.0.5:5353                      <-> 10.0.0.6:5353                      48 B  1p
+    192.168.1.50:0                     <-> 8.8.8.8:0                          34 B  1p
+  names learned
+    example.com                              93.184.216.34
+### exit=0
+### -r tests/sample.pcap -C -P tcp -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : proto=tcp
+  payload : off
+
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        seq=1000 ack=0 win=64240 [SYN] csum=ok
+        opts: MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+        IPv4 ttl=64 id=0x1236 ip-csum=ok
+        seq=5000 ack=1041 win=64240 [ACK] csum=BAD
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+        IPv6 hlim=64 ext=hop-by-hop
+        seq=777 ack=0 win=64240 [SYN] csum=ok
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+        IPv6 hlim=64
+        seq=888 ack=0 win=64240 [SYN] csum=ok
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+        IPv4 ttl=64 id=0x1241 ip-csum=ok
+        seq=7000 ack=8000 win=64240 [PSH, ACK] csum=ok
+        TLS  ClientHello SNI=example.com ALPN=h2,http/1.1 vers=TLS1.3/TLS1.2 ja3=336f5f33f4497e06a9cd5231997c3982 ja4=t13d0203h2_bd75acfa1e34_e610f2e04ce5
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+        IPv4 ttl=64 id=0x1242 ip-csum=ok
+        seq=8000 ack=7043 win=64240 [PSH, ACK] csum=ok
+        TLS  app-data 32 bytes
+17:13:39.002603 file     #5 TCP     8.8.8.8:80 -> 192.168.1.50:51347  len=111 ttl=64
+        IPv4 ttl=64 id=0x1243 ip-csum=ok
+        seq=5000 ack=6000 win=64240 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK len=5 server=test
+17:13:40.002740 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=54 ttl=64
+        IPv4 ttl=64 id=0x1244 ip-csum=ok
+        seq=9999 ack=0 win=64240 [SYN] csum=ok
+17:13:41.002877 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=76 ttl=64
+        IPv4 ttl=64 id=0x1245 ip-csum=ok
+        seq=10025 ack=0 win=64240 [PSH, ACK] csum=ok
+17:13:42.003014 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=79 ttl=64
+        IPv4 ttl=64 id=0x1246 ip-csum=ok
+        seq=10000 ack=0 win=64240 [PSH, ACK] csum=ok
+        HTTP GET /reasm HTTP/1.1
+
+--- stats ---
+packets 23 (1579 bytes)  shown 11  filtered 12  malformed 0
+  tcp 11
+  dns 0  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -P dns -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : proto=dns
+  payload : off
+
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+        IPv4 ttl=64 id=0x1237 ip-csum=ok
+        len=37 csum=ok
+        DNS  query example.com A
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+        IPv4 ttl=64 id=0x1240 ip-csum=ok
+        len=53 csum=ok
+        DNS  NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)
+
+--- stats ---
+packets 23 (1579 bytes)  shown 2  filtered 21  malformed 0
+  udp 2
+  dns 2  tls 0  http 0
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -H example.com -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : host=example.com
+  payload : off
+
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+        IPv4 ttl=64 id=0x1237 ip-csum=ok
+        len=37 csum=ok
+        DNS  query example.com A
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+        IPv4 ttl=64 id=0x1240 ip-csum=ok
+        len=53 csum=ok
+        DNS  NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+        IPv4 ttl=64 id=0x1241 ip-csum=ok
+        seq=7000 ack=8000 win=64240 [PSH, ACK] csum=ok
+        TLS  ClientHello SNI=example.com ALPN=h2,http/1.1 vers=TLS1.3/TLS1.2 ja3=336f5f33f4497e06a9cd5231997c3982 ja4=t13d0203h2_bd75acfa1e34_e610f2e04ce5
+
+--- stats ---
+packets 23 (1579 bytes)  shown 4  filtered 19  malformed 0
+  tcp 2
+  udp 2
+  dns 2  tls 1  http 1
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -p 443 -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : port=443
+  payload : quiet
+
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+
+--- stats ---
+packets 23 (1579 bytes)  shown 6  filtered 17  malformed 0
+  tcp 6
+  dns 0  tls 2  http 1
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -T 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : dump up to requested bytes
+
+=== stream 1: 8.8.8.8:443 <-> 192.168.1.50:51344 ===
+>>> 192.168.1.50:51344 -> 8.8.8.8:443
+GET / HTTP/1.1
+Host: example.com
+
+=== stream 2: [2001:db8::1]:40000 <-> [2001:db8::2]:443 ===
+=== stream 3: [2001:db8::3]:40001 <-> [2001:db8::4]:8443 ===
+=== stream 4: 8.8.8.8:443 <-> 192.168.1.50:51346 ===
+>>> 192.168.1.50:51346 -> 8.8.8.8:443
+....`...\......................................../.../.........example.com.......h2.http/1.1.+.......>>> 8.8.8.8:443 -> 192.168.1.50:51346
+.... ................................=== stream 5: 8.8.8.8:80 <-> 192.168.1.50:51347 ===
+>>> 8.8.8.8:80 -> 192.168.1.50:51347
+HTTP/1.1 200 OK
+Server: test
+Content-Length: 5
+
+hello=== stream 6: 10.2.2.2:80 <-> 192.168.1.50:52000 ===
+>>> 192.168.1.50:52000 -> 10.2.2.2:80
+GET /reasm HTTP/1.1
+Host: reasm.test
+
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+BODY!!### exit=0
+### -r tests/sample.pcap -C -F tcp and port 443 -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : bpf=tcp and port 443
+  payload : quiet
+
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+17:13:37.002329 file     #2 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+17:13:38.002466 file     #2 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+
+--- stats ---
+packets 23 (1579 bytes)  shown 5  filtered 18  malformed 0
+  tcp 5
+  dns 0  tls 2  http 1
+  streams 2
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+### exit=0
+### -r tests/sample.pcap -C -E -F not arp -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : bpf=not arp
+  evasion : -E thorough filtering (parsed, VLAN/ext-aware)
+  payload : quiet
+
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+17:13:26.000822 file     ICMP    192.168.1.50 -> 8.8.8.8  len=74 ttl=64
+17:13:27.000959 file     ICMP    8.8.8.8 -> 192.168.1.50  len=74 ttl=64
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+17:13:30.001370 file     ICMPv6  fe80::1 -> fe80::2  len=71 ttl=64
+17:13:31.001507 file     UDP     10.0.0.5:5353 -> 10.0.0.6:5353(mdns)  len=48 vlan=42 ttl=64
+17:13:32.001644 file     BAD     aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=IPv4  len=20  !
+        ! runt IPv4
+17:13:33.001781 file     EAPOL   aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=EAPOL  len=18
+17:13:34.001918 file     IP-FRAG 192.168.1.50 -> 10.1.1.1  len=57 ttl=64
+17:13:35.002055 file     UDP     192.168.1.50:0 -> 8.8.8.8:0  len=34 ttl=64  !
+        ! truncated UDP header
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+17:13:39.002603 file     #5 TCP     8.8.8.8:80 -> 192.168.1.50:51347  len=111 ttl=64
+17:13:40.002740 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=54 ttl=64
+17:13:41.002877 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=76 ttl=64
+17:13:42.003014 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=79 ttl=64
+
+--- stats ---
+packets 23 (1579 bytes)  shown 21  filtered 2  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -n 5 -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : off
+
+17:13:20.000000 file     ARP     who-has 192.168.1.1 tell 192.168.1.50  len=42
+17:13:21.000137 file     ARP     192.168.1.1 is-at 11:22:33:44:55:66  len=42
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        seq=1000 ack=0 win=64240 [SYN] csum=ok
+        opts: MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+        IPv4 ttl=64 id=0x1236 ip-csum=ok
+        seq=5000 ack=1041 win=64240 [ACK] csum=BAD
+
+--- stats ---
+packets 5 (303 bytes)  shown 5  filtered 0  malformed 0
+  tcp 3
+  arp 2
+  dns 0  tls 0  http 1
+  streams 1
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+### exit=0
+### -r tests/sample.pcap -C -s 128 -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : off
+
+17:13:20.000000 file     ARP     who-has 192.168.1.1 tell 192.168.1.50  len=42
+17:13:21.000137 file     ARP     192.168.1.1 is-at 11:22:33:44:55:66  len=42
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        seq=1000 ack=0 win=64240 [SYN] csum=ok
+        opts: MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+        IPv4 ttl=64 id=0x1236 ip-csum=ok
+        seq=5000 ack=1041 win=64240 [ACK] csum=BAD
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+        IPv4 ttl=64 id=0x1237 ip-csum=ok
+        len=37 csum=ok
+        DNS  query example.com A
+17:13:26.000822 file     ICMP    192.168.1.50 -> 8.8.8.8  len=74 ttl=64
+        IPv4 ttl=64 id=0x1238 ip-csum=ok
+        echo-request code=0 csum=ok id=0x4242 seq=1
+17:13:27.000959 file     ICMP    8.8.8.8 -> 192.168.1.50  len=74 ttl=64
+        IPv4 ttl=64 id=0x1239 ip-csum=ok
+        echo-reply code=0 csum=ok id=0x4242 seq=1
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+        IPv6 hlim=64 ext=hop-by-hop
+        seq=777 ack=0 win=64240 [SYN] csum=ok
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+        IPv6 hlim=64
+        seq=888 ack=0 win=64240 [SYN] csum=ok
+17:13:30.001370 file     ICMPv6  fe80::1 -> fe80::2  len=71 ttl=64
+        IPv6 hlim=64
+        echo-request code=0 csum=ok id=0x1234 seq=1
+17:13:31.001507 file     UDP     10.0.0.5:5353 -> 10.0.0.6:5353(mdns)  len=48 vlan=42 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        len=10 csum=ok
+17:13:32.001644 file     BAD     aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=IPv4  len=20  !
+        ! runt IPv4
+17:13:33.001781 file     EAPOL   aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=EAPOL  len=18
+17:13:34.001918 file     IP-FRAG 192.168.1.50 -> 10.1.1.1  len=57 ttl=64
+        IPv4 ttl=64 id=0x7777 MF off=1480 ip-csum=ok
+17:13:35.002055 file     UDP     192.168.1.50:0 -> 8.8.8.8:0  len=34 ttl=64  !
+        ! truncated UDP header
+        IPv4 ttl=64 id=0x2222 ip-csum=BAD
+        len=0 csum=?
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+        IPv4 ttl=64 id=0x1240 ip-csum=ok
+        len=53 csum=ok
+        DNS  NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)
+ch1m3ra: record larger than buffer
+### exit=1
+### -r tests/sample.pcap -C -M -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/sample.pcap (pcap file)
+  filter  : none
+  payload : off
+
+17:13:20.000000 file     ARP     who-has 192.168.1.1 tell 192.168.1.50  len=42
+17:13:21.000137 file     ARP     192.168.1.1 is-at 11:22:33:44:55:66  len=42
+17:13:22.000274 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=74 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        seq=1000 ack=0 win=64240 [SYN] csum=ok
+        opts: MSS=1460, SACK-perm, TS=111111/0, NOP, WS=7
+17:13:23.000411 file     #1 TCP     192.168.1.50:51344 -> 8.8.8.8:443(https)  len=91 ttl=64
+        IPv4 ttl=64 id=0x1235 ip-csum=ok
+        seq=1001 ack=5000 win=64240 [PSH, ACK] csum=ok
+        HTTP GET / HTTP/1.1 host=example.com
+17:13:24.000548 file     #1 TCP     8.8.8.8:443 -> 192.168.1.50:51344  len=54 ttl=64
+        IPv4 ttl=64 id=0x1236 ip-csum=ok
+        seq=5000 ack=1041 win=64240 [ACK] csum=BAD
+17:13:25.000685 file     UDP     192.168.1.50:53325 -> 8.8.8.8:53(domain)  len=71 ttl=64
+        IPv4 ttl=64 id=0x1237 ip-csum=ok
+        len=37 csum=ok
+        DNS  query example.com A
+17:13:26.000822 file     ICMP    192.168.1.50 -> 8.8.8.8  len=74 ttl=64
+        IPv4 ttl=64 id=0x1238 ip-csum=ok
+        echo-request code=0 csum=ok id=0x4242 seq=1
+17:13:27.000959 file     ICMP    8.8.8.8 -> 192.168.1.50  len=74 ttl=64
+        IPv4 ttl=64 id=0x1239 ip-csum=ok
+        echo-reply code=0 csum=ok id=0x4242 seq=1
+17:13:28.001096 file     #2 TCP     [2001:db8::1]:40000 -> [2001:db8::2]:443(https)  len=82 ttl=64
+        IPv6 hlim=64 ext=hop-by-hop
+        seq=777 ack=0 win=64240 [SYN] csum=ok
+17:13:29.001233 file     #3 TCP     [2001:db8::3]:40001 -> [2001:db8::4]:8443  len=74 ttl=64
+        IPv6 hlim=64
+        seq=888 ack=0 win=64240 [SYN] csum=ok
+17:13:30.001370 file     ICMPv6  fe80::1 -> fe80::2  len=71 ttl=64
+        IPv6 hlim=64
+        echo-request code=0 csum=ok id=0x1234 seq=1
+17:13:31.001507 file     UDP     10.0.0.5:5353 -> 10.0.0.6:5353(mdns)  len=48 vlan=42 ttl=64
+        IPv4 ttl=64 id=0x1234 ip-csum=ok
+        len=10 csum=ok
+17:13:32.001644 file     BAD     aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=IPv4  len=20  !
+        ! runt IPv4
+17:13:33.001781 file     EAPOL   aa:bb:cc:dd:ee:ff -> ff:ff:ff:ff:ff:ff type=EAPOL  len=18
+17:13:34.001918 file     IP-FRAG 192.168.1.50 -> 10.1.1.1  len=57 ttl=64
+        IPv4 ttl=64 id=0x7777 MF off=1480 ip-csum=ok
+17:13:35.002055 file     UDP     192.168.1.50:0 -> 8.8.8.8:0  len=34 ttl=64  !
+        ! truncated UDP header
+        IPv4 ttl=64 id=0x2222 ip-csum=BAD
+        len=0 csum=?
+17:13:36.002192 file     UDP     8.8.8.8:53 -> 192.168.1.50:53325  len=87 ttl=64
+        IPv4 ttl=64 id=0x1240 ip-csum=ok
+        len=53 csum=ok
+        DNS  NOERROR example.com A -> example.com A 93.184.216.34 (1 ans)
+17:13:37.002329 file     #4 TCP     192.168.1.50:51346 -> 8.8.8.8:443(https)  len=155 ttl=64
+        IPv4 ttl=64 id=0x1241 ip-csum=ok
+        seq=7000 ack=8000 win=64240 [PSH, ACK] csum=ok
+        TLS  ClientHello SNI=example.com ALPN=h2,http/1.1 vers=TLS1.3/TLS1.2 ja3=336f5f33f4497e06a9cd5231997c3982 ja4=t13d0203h2_bd75acfa1e34_e610f2e04ce5
+17:13:38.002466 file     #4 TCP     8.8.8.8:443 -> 192.168.1.50:51346  len=91 ttl=64
+        IPv4 ttl=64 id=0x1242 ip-csum=ok
+        seq=8000 ack=7043 win=64240 [PSH, ACK] csum=ok
+        TLS  app-data 32 bytes
+17:13:39.002603 file     #5 TCP     8.8.8.8:80 -> 192.168.1.50:51347  len=111 ttl=64
+        IPv4 ttl=64 id=0x1243 ip-csum=ok
+        seq=5000 ack=6000 win=64240 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK len=5 server=test
+17:13:40.002740 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=54 ttl=64
+        IPv4 ttl=64 id=0x1244 ip-csum=ok
+        seq=9999 ack=0 win=64240 [SYN] csum=ok
+17:13:41.002877 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=76 ttl=64
+        IPv4 ttl=64 id=0x1245 ip-csum=ok
+        seq=10025 ack=0 win=64240 [PSH, ACK] csum=ok
+17:13:42.003014 file     #6 TCP     192.168.1.50:52000 -> 10.2.2.2:80(http)  len=79 ttl=64
+        IPv4 ttl=64 id=0x1246 ip-csum=ok
+        seq=10000 ack=0 win=64240 [PSH, ACK] csum=ok
+        HTTP GET /reasm HTTP/1.1
+
+--- stats ---
+packets 23 (1579 bytes)  shown 23  filtered 0  malformed 2
+  tcp 11
+  udp 4
+  icmp 2
+  icmpv6 1
+  arp 2
+  ip 1
+  other 2
+  dns 2  tls 2  http 3
+  streams 6
+    #1   8.8.8.8:443              <-> 192.168.1.50:51344       0/37 B  3p  2.000s  open  [rtt=1000.1ms]
+    #2   [2001:db8::1]:40000      <-> [2001:db8::2]:443        0/0 B  1p  0.000s  open
+    #3   [2001:db8::3]:40001      <-> [2001:db8::4]:8443       0/0 B  1p  0.000s  open
+    #4   8.8.8.8:443              <-> 192.168.1.50:51346       37/101 B  2p  1.000s  mid
+    #5   8.8.8.8:80               <-> 192.168.1.50:51347       57/0 B  1p  0.000s  mid
+    #6   10.2.2.2:80              <-> 192.168.1.50:52000       0/47 B  3p  2.000s  open  [ooo=1]
+### exit=0
+### -r tests/sample.pcap -C -o bogus
+ch1m3ra: -o must be text, json, ndjson, csv, or zeek
+### exit=2
+### -r /nonexistent.pcap
+ch1m3ra: /nonexistent.pcap: No such file or directory
+### exit=1
+### -r tests/creds.pcap -C -B 32
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : dump up to requested bytes
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=1000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /admin HTTP/1.1 host=app.local
+        payload 79 bytes:
+        0000  47 45 54 20 2f 61 64 6d  69 6e 20 48 54 54 50 2f  |GET /admin HTTP/|
+        0010  31 2e 31 0d 0a 48 6f 73  74 3a 20 61 70 70 2e 6c  |1.1..Host: app.l|
+        ... 47 more bytes (-B to show more)
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=2000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP POST /login HTTP/1.1 host=app.local
+        payload 128 bytes:
+        0000  50 4f 53 54 20 2f 6c 6f  67 69 6e 20 48 54 54 50  |POST /login HTTP|
+        0010  2f 31 2e 31 0d 0a 48 6f  73 74 3a 20 61 70 70 2e  |/1.1..Host: app.|
+        ... 96 more bytes (-B to show more)
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=3000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK
+        payload 67 bytes:
+        0000  48 54 54 50 2f 31 2e 31  20 32 30 30 20 4f 4b 0d  |HTTP/1.1 200 OK.|
+        0010  0a 53 65 74 2d 43 6f 6f  6b 69 65 3a 20 53 49 44  |.Set-Cookie: SID|
+        ... 35 more bytes (-B to show more)
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=4000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /api HTTP/1.1 host=api.local
+        payload 132 bytes:
+        0000  47 45 54 20 2f 61 70 69  20 48 54 54 50 2f 31 2e  |GET /api HTTP/1.|
+        0010  31 0d 0a 48 6f 73 74 3a  20 61 70 69 2e 6c 6f 63  |1..Host: api.loc|
+        ... 100 more bytes (-B to show more)
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=5000 ack=1 win=65535 [PSH, ACK] csum=ok
+        payload 12 bytes:
+        0000  55 53 45 52 20 61 6c 69  63 65 0d 0a              |USER alice..|
+17:13:25.005000 file     #6 TCP     192.168.1.50:41001 -> 10.0.0.9:21(ftp)  len=67 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=6000 ack=1 win=65535 [PSH, ACK] csum=ok
+        payload 13 bytes:
+        0000  50 41 53 53 20 73 33 63  72 33 74 0d 0a           |PASS s3cr3t..|
+17:13:26.006000 file     #7 TCP     192.168.1.50:41002 -> 10.0.0.9:22(ssh)  len=95 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=7000 ack=1 win=65535 [PSH, ACK] csum=ok
+        BANR SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1
+        payload 41 bytes:
+        0000  53 53 48 2d 32 2e 30 2d  4f 70 65 6e 53 53 48 5f  |SSH-2.0-OpenSSH_|
+        0010  38 2e 39 70 31 20 55 62  75 6e 74 75 2d 33 75 62  |8.9p1 Ubuntu-3ub|
+        ... 9 more bytes (-B to show more)
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : quiet
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+17:13:25.005000 file     #6 TCP     192.168.1.50:41001 -> 10.0.0.9:21(ftp)  len=67 ttl=64
+17:13:26.006000 file     #7 TCP     192.168.1.50:41002 -> 10.0.0.9:22(ssh)  len=95 ttl=64
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -o json -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : off
+
+{"ts":1700000000.000000,"rel":0.000000,"iface":"file","len":133,"wire":133,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40001,"dport":80,"seq":1000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":1,"app":"http","http.line":"GET /admin HTTP/1.1","http.host":"app.local"}
+{"ts":1700000001.001000,"rel":1.001000,"iface":"file","len":182,"wire":182,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40002,"dport":80,"seq":2000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":2,"app":"http","http.line":"POST /login HTTP/1.1","http.host":"app.local"}
+{"ts":1700000002.002000,"rel":2.002000,"iface":"file","len":121,"wire":121,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40003,"dport":80,"seq":3000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":3,"app":"http","http.line":"HTTP/1.1 200 OK","http.code":200}
+{"ts":1700000003.003000,"rel":3.003000,"iface":"file","len":186,"wire":186,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40004,"dport":80,"seq":4000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":4,"app":"http","http.line":"GET /api HTTP/1.1","http.host":"api.local"}
+{"ts":1700000004.004000,"rel":4.004000,"iface":"file","len":66,"wire":66,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":41000,"dport":21,"seq":5000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":5}
+{"ts":1700000005.005000,"rel":5.005000,"iface":"file","len":67,"wire":67,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":41001,"dport":21,"seq":6000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":6}
+{"ts":1700000006.006000,"rel":6.006000,"iface":"file","len":95,"wire":95,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":41002,"dport":22,"seq":7000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":7,"banner":"SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1","service":"ssh"}
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -o csv -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : off
+
+ts,rel,iface,dir,proto,src,sport,dst,dport,len,vlan,info,user,pass,where,banner,os
+1700000000.000000,0.000000,"file",,"tcp","192.168.1.50",40001,"10.0.0.9",80,133,,"GET /admin HTTP/1.1 host=app.local","","","","",""
+1700000001.001000,1.001000,"file",,"tcp","192.168.1.50",40002,"10.0.0.9",80,182,,"POST /login HTTP/1.1 host=app.local","","","","",""
+1700000002.002000,2.002000,"file",,"tcp","192.168.1.50",40003,"10.0.0.9",80,121,,"HTTP/1.1 200 OK","","","","",""
+1700000003.003000,3.003000,"file",,"tcp","192.168.1.50",40004,"10.0.0.9",80,186,,"GET /api HTTP/1.1 host=api.local","","","","",""
+1700000004.004000,4.004000,"file",,"tcp","192.168.1.50",41000,"10.0.0.9",21,66,,"PSH, ACK","","","","",""
+1700000005.005000,5.005000,"file",,"tcp","192.168.1.50",41001,"10.0.0.9",21,67,,"PSH, ACK","","","","",""
+1700000006.006000,6.006000,"file",,"tcp","192.168.1.50",41002,"10.0.0.9",22,95,,"PSH, ACK","","","","SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1",""
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -e -o json
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : dump up to requested bytes
+
+{"ts":1700000000.000000,"rel":0.000000,"iface":"file","len":133,"wire":133,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40001,"dport":80,"seq":1000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":1,"app":"http","http.line":"GET /admin HTTP/1.1","http.host":"app.local","payload":"474554202f61646d696e20485454502f312e310d0a486f73743a206170702e6c6f63616c0d0a417574686f72697a6174696f6e3a2042617369632059575274615734366332566a636d56300d0a0d0a"}
+{"ts":1700000001.001000,"rel":1.001000,"iface":"file","len":182,"wire":182,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40002,"dport":80,"seq":2000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":2,"app":"http","http.line":"POST /login HTTP/1.1","http.host":"app.local","payload":"504f5354202f6c6f67696e20485454502f312e310d0a486f73743a206170702e6c6f63616c0d0a436f6e74656e742d547970653a206170706c69636174696f6e2f782d7777772d666f726d2d75726c656e636f6465640d0a0d0a757365726e61"}
+{"ts":1700000002.002000,"rel":2.002000,"iface":"file","len":121,"wire":121,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40003,"dport":80,"seq":3000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":3,"app":"http","http.line":"HTTP/1.1 200 OK","http.code":200,"payload":"485454502f312e3120323030204f4b0d0a5365742d436f6f6b69653a205349443d6465616462656566636166653b20506174683d2f3b20487474704f6e6c790d0a0d0a"}
+{"ts":1700000003.003000,"rel":3.003000,"iface":"file","len":186,"wire":186,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":40004,"dport":80,"seq":4000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":4,"app":"http","http.line":"GET /api HTTP/1.1","http.host":"api.local","payload":"474554202f61706920485454502f312e310d0a486f73743a206170692e6c6f63616c0d0a417574686f72697a6174696f6e3a204265617265722065794a68624763694f694a49557a49314e694a392e65794a7a645749694f6949304d69497349"}
+{"ts":1700000004.004000,"rel":4.004000,"iface":"file","len":66,"wire":66,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":41000,"dport":21,"seq":5000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":5,"payload":"5553455220616c6963650d0a"}
+{"ts":1700000005.005000,"rel":5.005000,"iface":"file","len":67,"wire":67,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":41001,"dport":21,"seq":6000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":6,"payload":"50415353207333637233740d0a"}
+{"ts":1700000006.006000,"rel":6.006000,"iface":"file","len":95,"wire":95,"eth.src":"aa:bb:cc:dd:ee:ff","eth.dst":"11:22:33:44:55:66","eth.type":"IPv4","ip.ver":4,"src":"192.168.1.50","dst":"10.0.0.9","ttl":64,"ip.id":0,"ip.df":true,"ip.mf":false,"ip.off":0,"ip.csum":"ok","proto":"tcp","sport":41002,"dport":22,"seq":7000,"ack":1,"win":65535,"flags":"PSH, ACK","tcp.csum":"ok","stream":7,"banner":"SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1","service":"ssh","payload":"5353482d322e302d4f70656e5353485f382e397031205562756e74752d337562756e7475302e310d0a"}
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -K -O -Y -N -B 64
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  harvest : credentials/tokens/banners
+  finger  : passive OS fingerprinting on
+  talkers : top-talker ranking on
+  names   : mDNS/LLMNR/NBNS/DNS harvesting on
+  payload : dump up to requested bytes
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=1000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /admin HTTP/1.1 host=app.local
+        CRED HTTP Basic user=admin pass=secret
+        OS   Unix-like
+        payload 79 bytes:
+        0000  47 45 54 20 2f 61 64 6d  69 6e 20 48 54 54 50 2f  |GET /admin HTTP/|
+        0010  31 2e 31 0d 0a 48 6f 73  74 3a 20 61 70 70 2e 6c  |1.1..Host: app.l|
+        0020  6f 63 61 6c 0d 0a 41 75  74 68 6f 72 69 7a 61 74  |ocal..Authorizat|
+        0030  69 6f 6e 3a 20 42 61 73  69 63 20 59 57 52 74 61  |ion: Basic YWRta|
+        ... 15 more bytes (-B to show more)
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=2000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP POST /login HTTP/1.1 host=app.local
+        CRED HTTP form user=bob pass=hunter2
+        OS   Unix-like
+        payload 128 bytes:
+        0000  50 4f 53 54 20 2f 6c 6f  67 69 6e 20 48 54 54 50  |POST /login HTTP|
+        0010  2f 31 2e 31 0d 0a 48 6f  73 74 3a 20 61 70 70 2e  |/1.1..Host: app.|
+        0020  6c 6f 63 61 6c 0d 0a 43  6f 6e 74 65 6e 74 2d 54  |local..Content-T|
+        0030  79 70 65 3a 20 61 70 70  6c 69 63 61 74 69 6f 6e  |ype: application|
+        ... 64 more bytes (-B to show more)
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=3000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK
+        COOK SID=deadbeefcafe
+        OS   Unix-like
+        payload 67 bytes:
+        0000  48 54 54 50 2f 31 2e 31  20 32 30 30 20 4f 4b 0d  |HTTP/1.1 200 OK.|
+        0010  0a 53 65 74 2d 43 6f 6f  6b 69 65 3a 20 53 49 44  |.Set-Cookie: SID|
+        0020  3d 64 65 61 64 62 65 65  66 63 61 66 65 3b 20 50  |=deadbeefcafe; P|
+        0030  61 74 68 3d 2f 3b 20 48  74 74 70 4f 6e 6c 79 0d  |ath=/; HttpOnly.|
+        ... 3 more bytes (-B to show more)
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=4000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /api HTTP/1.1 host=api.local
+        CRED HTTP Bearer
+        TOKN eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiIsIm5hbWUiOiJhZG1pbiJ9.c2lnbmF0dXJl
+        JWT  sub=42 name=admin 
+        OS   Unix-like
+        payload 132 bytes:
+        0000  47 45 54 20 2f 61 70 69  20 48 54 54 50 2f 31 2e  |GET /api HTTP/1.|
+        0010  31 0d 0a 48 6f 73 74 3a  20 61 70 69 2e 6c 6f 63  |1..Host: api.loc|
+        0020  61 6c 0d 0a 41 75 74 68  6f 72 69 7a 61 74 69 6f  |al..Authorizatio|
+        0030  6e 3a 20 42 65 61 72 65  72 20 65 79 4a 68 62 47  |n: Bearer eyJhbG|
+        ... 68 more bytes (-B to show more)
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=5000 ack=1 win=65535 [PSH, ACK] csum=ok
+        CRED FTP user=alice
+        OS   Unix-like
+        payload 12 bytes:
+        0000  55 53 45 52 20 61 6c 69  63 65 0d 0a              |USER alice..|
+17:13:25.005000 file     #6 TCP     192.168.1.50:41001 -> 10.0.0.9:21(ftp)  len=67 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=6000 ack=1 win=65535 [PSH, ACK] csum=ok
+        CRED FTP pass=s3cr3t
+        OS   Unix-like
+        payload 13 bytes:
+        0000  50 41 53 53 20 73 33 63  72 33 74 0d 0a           |PASS s3cr3t..|
+17:13:26.006000 file     #7 TCP     192.168.1.50:41002 -> 10.0.0.9:22(ssh)  len=95 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=7000 ack=1 win=65535 [PSH, ACK] csum=ok
+        BANR SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1
+        OS   Unix-like
+        payload 41 bytes:
+        0000  53 53 48 2d 32 2e 30 2d  4f 70 65 6e 53 53 48 5f  |SSH-2.0-OpenSSH_|
+        0010  38 2e 39 70 31 20 55 62  75 6e 74 75 2d 33 75 62  |8.9p1 Ubuntu-3ub|
+        0020  75 6e 74 75 30 2e 31 0d  0a                       |untu0.1..|
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  harvested: 5 credential(s), 1 banner(s)
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+  hosts (passive OS fingerprint)
+    192.168.1.50                   ttl=64  -                            850 B  7p  6.01s
+  top conversations (by bytes)
+    192.168.1.50:40004                 <-> 10.0.0.9:80                        186 B  1p
+    192.168.1.50:40002                 <-> 10.0.0.9:80                        182 B  1p
+    192.168.1.50:40001                 <-> 10.0.0.9:80                        133 B  1p
+    192.168.1.50:40003                 <-> 10.0.0.9:80                        121 B  1p
+    192.168.1.50:41002                 <-> 10.0.0.9:22                        95 B  1p
+    192.168.1.50:41001                 <-> 10.0.0.9:21                        67 B  1p
+    192.168.1.50:41000                 <-> 10.0.0.9:21                        66 B  1p
+### exit=0
+### -r tests/creds.pcap -C -P tcp -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : proto=tcp
+  payload : off
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=1000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /admin HTTP/1.1 host=app.local
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=2000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP POST /login HTTP/1.1 host=app.local
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=3000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=4000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /api HTTP/1.1 host=api.local
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=5000 ack=1 win=65535 [PSH, ACK] csum=ok
+17:13:25.005000 file     #6 TCP     192.168.1.50:41001 -> 10.0.0.9:21(ftp)  len=67 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=6000 ack=1 win=65535 [PSH, ACK] csum=ok
+17:13:26.006000 file     #7 TCP     192.168.1.50:41002 -> 10.0.0.9:22(ssh)  len=95 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=7000 ack=1 win=65535 [PSH, ACK] csum=ok
+        BANR SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -P dns -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : proto=dns
+  payload : off
+
+
+--- stats ---
+packets 7 (850 bytes)  shown 0  filtered 7  malformed 0
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -H example.com -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : host=example.com
+  payload : off
+
+
+--- stats ---
+packets 7 (850 bytes)  shown 0  filtered 7  malformed 0
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -p 443 -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : port=443
+  payload : quiet
+
+
+--- stats ---
+packets 7 (850 bytes)  shown 0  filtered 7  malformed 0
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -T 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : dump up to requested bytes
+
+=== stream 1: 10.0.0.9:80 <-> 192.168.1.50:40001 ===
+>>> 192.168.1.50:40001 -> 10.0.0.9:80
+GET /admin HTTP/1.1
+Host: app.local
+Authorization: Basic YWRtaW46c2VjcmV0
+
+=== stream 2: 10.0.0.9:80 <-> 192.168.1.50:40002 ===
+>>> 192.168.1.50:40002 -> 10.0.0.9:80
+POST /login HTTP/1.1
+Host: app.local
+Content-Type: application/x-www-form-urlencoded
+
+username=bob&password=hunter2&submit=1=== stream 3: 10.0.0.9:80 <-> 192.168.1.50:40003 ===
+>>> 192.168.1.50:40003 -> 10.0.0.9:80
+HTTP/1.1 200 OK
+Set-Cookie: SID=deadbeefcafe; Path=/; HttpOnly
+
+=== stream 4: 10.0.0.9:80 <-> 192.168.1.50:40004 ===
+>>> 192.168.1.50:40004 -> 10.0.0.9:80
+GET /api HTTP/1.1
+Host: api.local
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiIsIm5hbWUiOiJhZG1pbiJ9.c2lnbmF0dXJl
+
+=== stream 5: 10.0.0.9:21 <-> 192.168.1.50:41000 ===
+>>> 192.168.1.50:41000 -> 10.0.0.9:21
+USER alice
+=== stream 6: 10.0.0.9:21 <-> 192.168.1.50:41001 ===
+>>> 192.168.1.50:41001 -> 10.0.0.9:21
+PASS s3cr3t
+=== stream 7: 10.0.0.9:22 <-> 192.168.1.50:41002 ===
+>>> 192.168.1.50:41002 -> 10.0.0.9:22
+SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -F tcp and port 443 -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : bpf=tcp and port 443
+  payload : quiet
+
+
+--- stats ---
+packets 7 (850 bytes)  shown 0  filtered 7  malformed 0
+### exit=0
+### -r tests/creds.pcap -C -E -F not arp -q -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : bpf=not arp
+  evasion : -E thorough filtering (parsed, VLAN/ext-aware)
+  payload : quiet
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+17:13:25.005000 file     #6 TCP     192.168.1.50:41001 -> 10.0.0.9:21(ftp)  len=67 ttl=64
+17:13:26.006000 file     #7 TCP     192.168.1.50:41002 -> 10.0.0.9:22(ssh)  len=95 ttl=64
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -n 5 -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : off
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=1000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /admin HTTP/1.1 host=app.local
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=2000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP POST /login HTTP/1.1 host=app.local
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=3000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=4000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /api HTTP/1.1 host=api.local
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=5000 ack=1 win=65535 [PSH, ACK] csum=ok
+
+--- stats ---
+packets 5 (688 bytes)  shown 5  filtered 0  malformed 0
+  tcp 5
+  dns 0  tls 0  http 4
+  streams 5
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -s 128 -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : off
+
+ch1m3ra: record larger than buffer
+### exit=1
+### -r tests/creds.pcap -C -M -B 0
+ch1m3ra 2.0 - raw AF_PACKET, all decoding done here
+  source  : tests/creds.pcap (pcap file)
+  filter  : none
+  payload : off
+
+17:13:20.000000 file     #1 TCP     192.168.1.50:40001 -> 10.0.0.9:80(http)  len=133 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=1000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /admin HTTP/1.1 host=app.local
+17:13:21.001000 file     #2 TCP     192.168.1.50:40002 -> 10.0.0.9:80(http)  len=182 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=2000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP POST /login HTTP/1.1 host=app.local
+17:13:22.002000 file     #3 TCP     192.168.1.50:40003 -> 10.0.0.9:80(http)  len=121 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=3000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP HTTP/1.1 200 OK
+17:13:23.003000 file     #4 TCP     192.168.1.50:40004 -> 10.0.0.9:80(http)  len=186 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=4000 ack=1 win=65535 [PSH, ACK] csum=ok
+        HTTP GET /api HTTP/1.1 host=api.local
+17:13:24.004000 file     #5 TCP     192.168.1.50:41000 -> 10.0.0.9:21(ftp)  len=66 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=5000 ack=1 win=65535 [PSH, ACK] csum=ok
+17:13:25.005000 file     #6 TCP     192.168.1.50:41001 -> 10.0.0.9:21(ftp)  len=67 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=6000 ack=1 win=65535 [PSH, ACK] csum=ok
+17:13:26.006000 file     #7 TCP     192.168.1.50:41002 -> 10.0.0.9:22(ssh)  len=95 ttl=64
+        IPv4 ttl=64 DF ip-csum=ok
+        seq=7000 ack=1 win=65535 [PSH, ACK] csum=ok
+        BANR SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1
+
+--- stats ---
+packets 7 (850 bytes)  shown 7  filtered 0  malformed 0
+  tcp 7
+  dns 0  tls 0  http 4
+  streams 7
+    #1   10.0.0.9:80              <-> 192.168.1.50:40001       0/79 B  1p  0.000s  mid
+    #2   10.0.0.9:80              <-> 192.168.1.50:40002       0/128 B  1p  0.000s  mid
+    #3   10.0.0.9:80              <-> 192.168.1.50:40003       0/67 B  1p  0.000s  mid
+    #4   10.0.0.9:80              <-> 192.168.1.50:40004       0/132 B  1p  0.000s  mid
+    #5   10.0.0.9:21              <-> 192.168.1.50:41000       0/12 B  1p  0.000s  mid
+    #6   10.0.0.9:21              <-> 192.168.1.50:41001       0/13 B  1p  0.000s  mid
+    #7   10.0.0.9:22              <-> 192.168.1.50:41002       0/41 B  1p  0.000s  mid
+### exit=0
+### -r tests/creds.pcap -C -o bogus
+ch1m3ra: -o must be text, json, ndjson, csv, or zeek
+### exit=2
+### -r /nonexistent.pcap
+ch1m3ra: /nonexistent.pcap: No such file or directory
+### exit=1
+### -l (normalised)
+IFACE            STATE                  MAC                ADDR
+### exit=0
+### --help
+ch1m3ra 2.0 - packet sniffer built from scratch (no libpcap)
+
+usage: ./ch1m3ra [options]
+  -i <iface>   capture on <iface> (default: all interfaces)
+  -l           list interfaces and exit
+  -r <file>    read packets from a pcap file (no root needed)
+  -w <file>    write captured packets to a pcap file (with -r: filter a pcap offline)
+               .pcapng extension selects the pcapng container
+  -W <MB>      with -w: rotate to file-NNNNN after <MB> megabytes
+  --rotate-secs <n>  with -w: rotate every <n> seconds
+  -H <host>    only packets matching this: IP substring, or a decoded
+               DNS question name / TLS SNI / HTTP Host header
+  -p <port>    only packets with this source or destination port
+  -P <proto>   only this protocol: tcp udp icmp icmpv6 arp ip ipv6 dns tls http frag ...
+  -n <count>   stop after <count> packets
+  -s <len>     snapshot length, bytes captured per packet (default 65535)
+  -B <len>     payload bytes to dump (default 96, 0 = none)
+  -q           quiet: one line per packet, no details or payload
+  -o <fmt>     output format: text (default), json (one object per line,
+               jq-friendly), csv (header row + rows)
+               extras: ndjson (json + "schema":1), zeek (TSV conn-style log)
+  -e           timestamps relative to the first displayed packet
+  -T <id>      follow a TCP stream: print reassembled payload as text and
+               suppress packet lines (0 = follow every stream; ids shown
+               as #N on packet lines and in the final stats)
+  -F <expr>    kernel BPF filter (tcpdump-like subset): tcp udp icmp icmp6
+               arp ip ip6, port N [src|dst] host ADDR, and/or/not/() with
+               implicit and - e.g. -F 'tcp and port 443'.  Matching runs
+               in the kernel (and in our own interpreter for -r); assumes
+               untagged frames and no IPv6 extension headers
+  -Z           zero-copy capture: kernel writes into an mmap PACKET_RX_RING
+               instead of recvfrom copies (live capture only)
+  -U           interactive TUI: colour-coded log, start/stop (s/x), scroll
+               (j/k, PgUp/PgDn), search (/ then n/N), detail pane (Enter),
+               pane switch (p), clear (c), follow (f), quit (q)
+  -K           harvest cleartext credentials/tokens (HTTP basic/bearer/form,
+               FTP, POP3, IMAP, SMTP, Telnet, SNMP, cookies, JWTs)
+  -k <file>    like -K but also append each hit to <file>
+  -O           passive OS fingerprint hosts (TTL + TCP options, p0f-style)
+  -Y           top-talkers: rank hosts/conversations by bytes
+  -N           learn hostnames from mDNS/LLMNR/NBNS/DNS responses
+  -E           thorough filtering: parse frames instead of fixed BPF offsets
+               (VLAN- and IPv6-extension-header aware)
+  -A           reassemble IPv4/IPv6 fragments and decode the whole datagram
+  -D           defensive anomaly detection: ARP/ND spoof, rogue DHCP, mDNS/
+               LLMNR/WPAD poisoning, VLAN double-tag/DTP (passive, warns to stderr)
+  --follow-out <file>  with -T: write the followed stream's reassembled
+               payloads to a pcap you can reopen in Wireshark
+  -M           do not enter promiscuous mode
+  -C           disable colors
+  --load-config <file>  apply saved settings first ("-" = ~/.ch1m3rarc)
+  --save-config         write the current settings to ~/.ch1m3rarc and exit
+  -h, --help   this help page
+
+offensive / active tools (root + explicit flag; they transmit real packets):
+  --arp-poison <victim>,<gateway>[,<iface>]
+               ARP-spoof the pair to MITM their traffic (Ctrl-C to restore)
+  --syn-scan <host>[:<ports>]
+               half-open port scan; <ports> like 22,80,443 or 1-1024
+  --dhcp-starve <iface>[:<count>]
+               exhaust a DHCP server's pool with random-client DISCOVERs
+  --replay <pcap>          re-send frames from a pcap (edit with --rewrite-src)
+  --banner-grab <host>[:<ports>]  connect + read service banners
+               (--banner-timeout <ms> read timeout, default 1500)
+  --vlan-hop <iface>:<outer>:<inner>
+               double-tagged 802.1Q frames to hop into another VLAN
+  --bench <n>             decode the -r pcap n times and report packets/sec
+  --deauth <bssid>[,<client>][,<count>]
+               802.11 deauth frames over a monitor vif (authorised testing)
+  --beacon-flood <ssid>[,<count>]  fake-AP beacon flood over a monitor vif
+  --rewrite-src <ip>       replace source IP in replayed frames
+
+examples:
+  sudo ./ch1m3ra -i wlan0 -P tcp -p 443
+  sudo ./ch1m3ra -i eth0 -w capture.pcap
+  sudo ./ch1m3ra -i eth0 -Z -F 'tcp and port 443'
+  sudo ./ch1m3ra -i wlan0 -U            (interactive TUI, start with s)
+  sudo ./ch1m3ra -i wlan0 -K -O -U      (harvest creds + fingerprint, in the TUI)
+  sudo ./ch1m3ra -i eth0 --arp-poison 192.168.1.5,192.168.1.1
+  sudo ./ch1m3ra -i eth0 --syn-scan 10.0.0.1:22,80,443
+  ./ch1m3ra -r capture.pcap -H 8.8.8.8 -B 256
+  ./ch1m3ra -r capture.pcap -o json | jq -r 'select(.app=="dns") | .dns.qname'
+  ./ch1m3ra -r capture.pcap -q        (note stream ids #N, then)
+  ./ch1m3ra -r capture.pcap -T 3      ...follow stream 3 as text
+### exit=0

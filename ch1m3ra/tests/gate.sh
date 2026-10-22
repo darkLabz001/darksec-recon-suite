@@ -3,7 +3,9 @@
 # and diff.  Prints the diff; a clean run means only intended changes.
 set -u
 BIN=${BIN:-./ch1m3ra}
-OUT=/tmp/opencode/gate.out
+OUT=$(mktemp)
+RAW=$(mktemp)
+trap 'rm -f "$OUT" "$RAW"' EXIT
 : > "$OUT"
 run() {
     printf '### %s\n' "$*" >> "$OUT"
@@ -30,16 +32,14 @@ for P in tests/sample.pcap tests/creds.pcap; do
     run -r "$P" -C -o bogus
     run -r /nonexistent.pcap
 done
-# -l output depends on the host's interfaces; normalise it to the header plus a
-# sorted list of interface names so the gate only catches code-driven changes.
+# -l output depends on the host's interfaces: only the header is compared, so
+# the gate stays reproducible across machines and still catches code-driven
+# changes (a missing header or a non-zero exit).
 {
     printf '### -l (normalised)\n' >> "$OUT"
-    "$BIN" -l > /tmp/opencode/.gate_lraw.$$ 2>&1
+    "$BIN" -l > "$RAW" 2>&1
     rc=$?
-    awk 'NR==1{print; next} {print $1}' /tmp/opencode/.gate_lraw.$$ > /tmp/opencode/.gate_l.$$
-    head -1 /tmp/opencode/.gate_l.$$ >> "$OUT"
-    tail -n +2 /tmp/opencode/.gate_l.$$ | sort >> "$OUT"
-    rm -f /tmp/opencode/.gate_lraw.$$ /tmp/opencode/.gate_l.$$
+    head -1 "$RAW" >> "$OUT"
     printf '### exit=%d\n' "$rc" >> "$OUT"
 }
 run --help

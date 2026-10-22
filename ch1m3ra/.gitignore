@@ -2,4 +2,11 @@
 *.o
 /ch1m3ra
 /sniffer
-/.baseline/
+/fuzz
+
+# The frozen behaviour baseline (.baseline/ch1m3ra.out) is tracked on
+# purpose: `make gate` diffs the tool's output against it.
+
+# Python bytecode caches
+__pycache__/
+*.pyc

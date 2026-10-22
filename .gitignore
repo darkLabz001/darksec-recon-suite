@@ -1,0 +1,10 @@
+# Editor and OS noise
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*~
+
+# Local scratch
+*.log
+*.local
